@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreatFeed – Cybersecurity News</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #00ff41; --bg: #0d1117; --surface: #161b22; --text: #c9d1d9; --muted: #8b949e; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Fira Code', monospace;
+            line-height: 1.6;
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            background-image:
+                linear-gradient(rgba(0,255,65,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,65,.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            animation: scanlines 8s linear infinite;
+        }
+        @keyframes scanlines {
+            0% { background-position-y: 0; }
+            100% { background-position-y: 20px; }
+        }
+        h1, h2 { color: var(--accent); margin: 0 0 1rem; letter-spacing: .05em; }
+        h1 span { animation: flicker 3s infinite; }
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .7; }
+        }
+        #controls {
+            margin-bottom: 2rem;
+            padding: 1rem 1.5rem;
+            background-color: var(--surface);
+            border: 1px solid var(--muted);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .75rem;
+        }
+        @media (max-width: 600px) {
+            #controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #controls select,
+            #controls button,
+            #controls .date-wrapper {
+                width: 100%;
+            }
+        }
+        #controls label { color: var(--muted); font-size: .875rem; }
+        #controls select {
+            padding: .5rem 1.75rem .5rem .75rem;
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--muted);
+            font-family: inherit;
+            font-size: .875rem;
+            transition: border-color .2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%2300ff41' d='M0 0l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right .75rem center;
+            background-size: 10px 5px;
+        }
+        #controls button, #controls input[type="date"] {
+            padding: .5rem .75rem;
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--muted);
+            font-family: inherit;
+            font-size: .875rem;
+            transition: border-color .2s;
+        }
+        #controls .date-wrapper {
+            position: relative;
+            width: 135px;
+        }
+        #controls .date-wrapper input[type="date"] {
+            width: 100%;
+            opacity: 0;
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            cursor: pointer;
+            z-index: 3;
+        }
+        .calendar-icon-stack {
+            position: absolute;
+            top: 50%;
+            right: .75rem;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            pointer-events: none;
+        }
+        .calendar-icon-stack svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #controls button {
+            cursor: pointer;
+            border-color: var(--accent);
+            color: var(--accent);
+            position: relative;
+            overflow: hidden;
+            transition: background-color .2s;
+        }
+        #controls button:hover { background-color: var(--accent); color: #000; }
+        #controls button::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0,255,65,.4), transparent);
+            transform: rotate(45deg);
+            animation: glare 2s infinite;
+        }
+        @keyframes glare {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); } 
+        }
+        #news {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .article {
+            background-color: var(--surface);
+            padding: 1.25rem 1.75rem;
+            border: 1px solid var(--muted);
+            border-radius: 4px;
+            position: relative;
+            transition: transform .2s, box-shadow .2s;
+            box-shadow: 0 0 8px rgba(0,255,65,.15);
+        }
+        .article:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 12px rgba(0,255,65,.25);
+        }
+        .article h3 {
+            margin: 0 0 .5rem;
+            font-size: 1.125rem;
+        }
+        .article a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color .2s;
+        }
+        .article a:hover {
+            color: var(--accent);
+            text-shadow: 0 0 4px var(--accent);
+        }
+        .article img {
+            max-width: 100%;
+            height: auto;
+            margin: .5rem 0;
+            border: 1px solid var(--muted);
+            filter: grayscale(1) brightness(.9);
+            transition: filter .2s;
+        }
+        .article:hover img { filter: grayscale(0) brightness(1); }
+        .article p {
+            margin: 0;
+        }
+        #ad {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        #ad img {
+            max-width: 100%;
+            border: 1px solid var(--muted);
+        }
+        footer {
+            margin-top: 3rem;
+            color: var(--muted);
+            font-size: .75rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ThreatFeed <span>–</span> Cybersecurity News</h1>
+
+    <div id="controls">
+        <label for="source-select">Source:</label>
+        <select id="source-select">
+            <option value="all">All Sources</option>
+            <!-- Populated by JS -->
+        </select>
+
+        <label for="num-articles">Limit:</label>
+        <select id="num-articles">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="all">All</option>
+        </select>
+
+        <label for="date-start">From:</label>
+        <div class="date-wrapper">
+            <input type="date" id="date-start">
+            <span class="calendar-icon-stack">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--accent)"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM5 7V6h14v1H5z"/></svg>
+            </span>
+        </div>
+
+        <label for="date-end">To:</label>
+        <div class="date-wrapper">
+            <input type="date" id="date-end">
+            <span class="calendar-icon-stack">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--accent)"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM5 7V6h14v1H5z"/></svg>
+            </span>
+        </div>
+
+        <label for="sort-by">Sort by:</label>
+        <select id="sort-by">
+            <option value="publishedAt">Date</option>
+            <option value="rank">Rank</option>
+        </select>
+
+        <button id="apply-filters">Apply</button>
+    </div>
+
+    <div id="ad"></div>
+
+    <h2>Latest Articles</h2>
+    <div id="news"></div>
+
+    <footer>ThreatFeed – Real-time cybersecurity news aggregation</footer>
+
+    <script>
+        const rssSources = [
+            "https://www.bleepingcomputer.com/feed/",
+            "https://feeds.feedburner.com/TheHackersNews",
+            "https://krebsonsecurity.com/feed/",
+            "https://blogs.cisco.com/security/feed/",
+            "https://www.wired.com/feed/category/security/latest/rss",
+            "https://www.securityweek.com/feed/"
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sourceSelect = document.getElementById('source-select');
+            const numArticlesSelect = document.getElementById('num-articles');
+            const dateStartInput = document.getElementById('date-start');
+            const dateEndInput = document.getElementById('date-end');
+            const sortBySelect = document.getElementById('sort-by');
+            const applyFiltersButton = document.getElementById('apply-filters');
+            const newsContainer = document.getElementById('news');
+            const adContainer = document.getElementById('ad');
+
+            // Populate source dropdown
+            rssSources.forEach(sourceUrl => {
+                const option = document.createElement('option');
+                option.value = sourceUrl;
+                const urlParts = sourceUrl.split('/');
+                let domain = urlParts[2];
+                if (domain.includes('feedburner.com')) {
+                    domain = urlParts[urlParts.length - 1];
+                }
+                option.textContent = domain.replace('www.', '').replace('.com', '').replace('.org', '').replace('.net', '').replace('rss', '').replace('all', '').replace('/', '');
+                sourceSelect.appendChild(option);
+            });
+
+            const fetchAd = () => {
+                return fetch('/ad')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        adContainer.innerHTML = '';
+                        const adLink = document.createElement('a');
+                        adLink.href = data.targetUrl;
+                        adLink.target = '_blank';
+                        const adImg = document.createElement('img');
+                        adImg.src = data.imageUrl;
+                        adLink.appendChild(adImg);
+                        adContainer.appendChild(adLink);
+                    })
+                    .catch(error => {
+                        console.error('There has been a problem with your fetch operation:', error);
+                        adContainer.innerHTML = '<p>Advertisement could not be loaded.</p>';
+                    });
+            };
+
+            const fetchNews = () => {
+                const selectedSource = sourceSelect.value;
+                const numArticles = numArticlesSelect.value;
+                const startDate = dateStartInput.value;
+                const endDate = dateEndInput.value;
+                const sortBy = sortBySelect.value;
+
+                let newsUrl = '/news';
+                const params = new URLSearchParams();
+
+                if (selectedSource !== 'all') {
+                    params.append('source', selectedSource);
+                }
+                if (numArticles !== 'all' && parseInt(numArticles) > 0) {
+                    params.append('limit', numArticles);
+                }
+                if (startDate) {
+                    params.append('start', startDate);
+                }
+                if (endDate) {
+                    params.append('end', endDate);
+                }
+                if (sortBy) {
+                    params.append('sortBy', sortBy);
+                }
+
+                if (params.toString()) {
+                    newsUrl += `?${params.toString()}`;
+                }
+
+                return fetch(newsUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        newsContainer.innerHTML = '';
+                        if (data && data.length > 0) {
+                            data.forEach(article => {
+                                const articleDiv = document.createElement('div');
+                                articleDiv.className = 'article';
+
+                                let content = `<h3><a href="${article.url}" target="_blank">${article.title}</a></h3>`;
+                                if (article.imageUrl) {
+                                    content += `<img src="${article.imageUrl}" alt="${article.title}">`;
+                                }
+                                content += `<p>Rank: ${article.rank}</p>`;
+                                content += `<p>${article.description}</p>`;
+
+                                articleDiv.innerHTML = content;
+                                newsContainer.appendChild(articleDiv);
+                            });
+                        } else {
+                            newsContainer.innerHTML = '<p>No articles found.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('There has been a problem with your fetch operation:', error);
+                        newsContainer.innerHTML = '<p>News could not be loaded.</p>';
+                    });
+            };
+
+            const fetchAll = () => {
+                fetchAd();
+                fetchNews();
+            }
+
+            applyFiltersButton.addEventListener('click', fetchAll);
+
+            // Initial fetch
+            fetchAll();
+        });
+    </script>
+
+</body>
+</html>
