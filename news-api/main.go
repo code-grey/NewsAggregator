@@ -34,6 +34,10 @@ func main() {
 	mux.Handle("/", fs)
 	mux.HandleFunc("/news", handlers.GetNews)
 	mux.HandleFunc("/ad", handlers.GetAd)
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 
 	// Chain the middlewares. The request will flow from logging to security headers to the rate limiter.
 	handler := loggingMiddleware(securityHeadersMiddleware(rateLimitMiddleware(mux)))
