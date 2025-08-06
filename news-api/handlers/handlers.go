@@ -59,3 +59,15 @@ func GetAd(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ad)
 }
+
+func GetTodayThreat(w http.ResponseWriter, r *http.Request) {
+	threatScore, err := db.GetTodayThreatScore()
+	if err != nil {
+		log.Printf("Error getting today's threat score: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(threatScore)
+}

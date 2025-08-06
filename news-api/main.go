@@ -15,25 +15,30 @@ import (
 var RssSources = []string{
 	"https://www.bleepingcomputer.com/feed/",
 	"https://feeds.feedburner.com/TheHackersNews",
-	"https://krebsonsecurity.com/feed/",
 	"https://blogs.cisco.com/security/feed",
 	"https://www.wired.com/feed/category/security/latest/rss",
 	"https://www.securityweek.com/feed/",
+	"https://news.sophos.com/en-us/feed/",
+	"https://www.csoonline.com/feed/",
 }
 
 // Create a rate limiter that allows 1 request per second with a burst size of 5.
 var limiter = rate.NewLimiter(1, 5)
 
 func main() {
+	if err := db.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 	// Start the background caching job
 	db.StartCachingJob(RssSources)
 
 	// The main handler is now wrapped in our security middlewares.
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("./test"))
-	mux.Handle("/", fs)
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.HandleFunc("/news", handlers.GetNews)
 	mux.HandleFunc("/ad", handlers.GetAd)
+	mux.HandleFunc("/today-threat", handlers.GetTodayThreat)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))

@@ -53,14 +53,14 @@ A significant refactoring was undertaken to improve the Go backend's structure a
 
 A new feature was added to rank news articles based on keyword presence.
 
-*   **`models/models.go`:** Added a `Rank` field (`int`) to the `NewsArticle` struct.
-*   **`db/db.go`:**
+*   **`models.go`:** Added a `Rank` field (`int`) to the `NewsArticle` struct.
+*   **`db.go`:**
     *   Modified the `articles` table creation SQL to include a `rank INTEGER DEFAULT 0` column.
     *   Implemented a `calculateRank` function that assigns scores based on high, medium, and low-impact cybersecurity keywords found in the article's title and description.
     *   Updated `insertArticle` to store the calculated rank.
     *   Modified `GetArticlesFromDB` to accept a `sortBy` string parameter. If `sortBy` is "rank", it orders results by `rank DESC`; otherwise, it defaults to `publishedAt DESC`.
-*   **`handlers/handlers.go`:** Modified the `GetNews` handler to retrieve the `sortBy` query parameter from the request and pass it to `db.GetArticlesFromDB`.
-*   **`news-api/test/index.html`:**
+*   **`handlers.go`:** Modified the `GetNews` handler to retrieve the `sortBy` query parameter from the request and pass it to `db.GetArticlesFromDB`.
+*   **`index.html`:**
     *   Added a "Sort by" dropdown (`<select id="sort-by">`) with options for "Date" (default) and "Rank".
     *   Updated the `fetchNews` JavaScript function to include the `sortBy` parameter in the API request.
     *   Modified the article display to show the calculated rank.
@@ -89,26 +89,60 @@ Key adjustments were made to ensure smooth deployment on Render's free tier.
 *   **`architecture.md`:** Created a comprehensive document detailing the project's overall architecture, backend components, features, data flow, and deployment considerations.
 *   **`optimize.md`:** Created a document outlining various Android app optimization techniques, focusing on reducing app size (App Bundles, R8, dynamic features, vector drawables, image compression, lightweight libraries, lazy loading).
 
-## 9. Discussions & Future Considerations
+## 9. Recent Developments & Feature Implementations
 
-Throughout the development, several important architectural and feature discussions took place:
+This section details the work done since the last major update, focusing on stabilizing the backend, enhancing the user experience, and introducing new features.
 
-*   **Article Summarization:**
-    *   **Challenge:** RSS feeds often provide only snippets, not full articles.
-    *   **Solution:** Scraping the full article content from source URLs using `goquery` (for extraction) and `bluemonday` (for sanitization).
-    *   **Website Scraping Policies:** Investigated `robots.txt` files for all RSS sources to determine scraping allowances (e.g., Krebs on Security disallows).
-*   **Semantic Similarity Search:**
-    *   **Feasibility:** Confirmed it's possible with small language models (<1GB).
-    *   **Implementation:** Generate sentence embeddings for articles, store them, and use cosine similarity for comparison.
-    *   **Model Hosting:** Recommended **client-side (on-device)** hosting for the embedding model (e.g., Gemini Nano) due to Render's free-tier resource limitations and cost implications. This offloads processing from the server.
-*   **Client-Side SQLite for Archive:**
-    *   **Proposal:** Store a persistent archive of news articles directly on the user's Android device using SQLite.
-    *   **Benefits:** Offline access, user-specific history, improved performance, and keeps the backend stateless and free-tier compatible.
-    *   **Cleanup:** Implement a weekly cleanup mechanism for older articles in the client-side DB.
-*   **Cold Storage Archive:**
-    *   **Discussion:** Explored options for a permanent archive of article URLs.
-    *   **Conclusion:** Client-side SQLite is the most practical for an MVP. Server-side CSV/Google Docs were deemed impractical for the free tier due to ephemeral storage or excessive complexity.
-*   **Fetching Frequency:** The server fetches news every 15 minutes. The client fetches news from the server on user demand (app open, refresh).
-*   **Render Free Tier Limitations:** Acknowledged and planned around ephemeral storage and cold starts. The health check endpoint and external cron job are solutions for the latter.
+### 9.1 Backend Stability & Debugging
+
+*   **Persistent `500 Internal Server Error`:** Encountered persistent `500 Internal Server Error` when fetching articles, despite successful database initialization and caching.
+    *   **Diagnosis:** Initial attempts to debug by adding detailed error logging to `handlers.go` and `db.go` were unsuccessful in revealing the root cause directly in the browser.
+    *   **Root Cause Identification:** Suspected issues with the `db` connection being `nil` or invalid, or `log.Fatalf` calls terminating the server prematurely.
+    *   **Solution:**
+        *   Modified `db.InitDB()` to return an error instead of calling `log.Fatalf`.
+        *   Modified `main.go` to handle the error returned by `db.InitDB()` using `log.Fatalf`, ensuring that database initialization failures are explicitly logged and stop the server.
+        *   Added a `nil` check for the `db` connection in `db.GetArticlesFromDB` to return a more explicit error if the connection is not established.
+        *   Removed the temporary `check_db.go` file to prevent build conflicts.
+*   **Server Accessibility:** Ensured the server is running in the background using `start /B` for continuous operation during development.
+
+### 9.2 Frontend Enhancements & Bug Fixes
+
+*   **Article Display Issues:**
+    *   **Problem:** Articles were not showing up on the frontend despite successful backend caching.
+    *   **Root Cause:** The `http.FileServer` in `main.go` was incorrectly capturing all requests due to `mux.Handle("/", fs)`, preventing API endpoints from being reached.
+    *   **Solution:** Changed `mux.Handle("/", fs)` to `mux.Handle("/static/", http.StripPrefix("/static/", fs))` in `main.go` to serve static files only from the `/static/` path.
+*   **Image Removal:** Removed the display of images from articles in `news-api/test/index.html` for a cleaner, text-focused view.
+*   **Instant Filter Application:** Implemented `change` event listeners on filter `select` and `input[type="date"]` elements in `news-api/test/index.html` to trigger `fetchAll()` instantly, removing the need for an "Apply" button.
+*   **Duplicate Rank Display:** Fixed a bug in `news-api/test/index.html` that caused the article rank to be displayed twice.
+*   **CSO Online Visibility:** Re-added `https://www.csoonline.com/feed/` to both `news-api/main.go` and `news-api/test/index.html` to make it visible in the source dropdown, acknowledging its mixed-language content for now.
+
+### 9.3 "Today in ThreatFeed" Feature Implementation
+
+*   **Concept:** Introduced a new feature to provide an at-a-glance summary of the current cybersecurity threat level.
+*   **Scoring Mechanism:**
+    *   **Initial Idea:** Simple sum of article ranks.
+    *   **Refinement:** Adopted an **average rank** of articles published in the last 24 hours to provide a more meaningful "per-article" severity.
+    *   **Thresholds:** Defined numerical thresholds for the average rank to map to qualitative threat levels:
+        *   `0.0` to `1.5`: "No Worries" (Green)
+        *   `1.6` to `3.5`: "Attention!" (Yellow/Orange)
+        *   `3.6` and above: "Code Red" (Red)
+    *   **Insufficient Data Handling:** Implemented a `MIN_ARTICLES_FOR_SCORE` constant (e.g., 5 articles) to return "No Worries (Insufficient Data)" if not enough articles are available for a reliable score.
+*   **Backend Implementation:**
+    *   Added `ThreatScore` struct and `GetTodayThreatScore()` function in `news-api/db/db.go` to calculate the average rank and phrase.
+    *   Created `/today-threat` API endpoint in `news-api/handlers/handlers.go` to expose the threat score.
+*   **Frontend Implementation:**
+    *   Added a new HTML section (`#threat-score-section`) in `news-api/test/index.html` to display the score and a meter bar.
+    *   Added CSS for `threat-meter-container` and `threat-meter-fill` with color classes (`threat-low`, `threat-medium`, `threat-high`) for visual representation.
+    *   Implemented JavaScript to fetch the score from `/today-threat`, update the phrase, and dynamically control the meter's width and color.
+
+### 9.4 Future Considerations & Discussions
+
+*   **"What This Means For You" Section:** Discussed the potential for a highly valuable feature that translates aggregated threat data into personalized, actionable implications for the user.
+    *   **Pros:** High value, personalization, proactive security, strong differentiation.
+    *   **Cons:** Significant technical complexity (especially for personalized advice requiring NLP and knowledge bases), risk of misinformation, high maintenance.
+    *   **Confidence Score:** 7/10 for a basic version (general advice), 3/10 for a highly personalized version without additional resources.
+    *   **Proposed Phased Approach:** Start with general advice (V1), then explore curated explanations (V2), and finally advanced PoC linking (V3) with careful risk management.
+*   **Language Detection (Next Step):** Identified the need to implement language detection in the Go backend to filter out non-English articles from mixed-language feeds, ensuring data quality. Lingua-Go was identified as a suitable library.
+*   **Vulnerability to PoC/Explanation Linkage:** Explored the idea of linking vulnerabilities to PoC exploits, MITRE CVEs, and technical explanations. This was deemed a highly valuable but complex feature with significant safety and maintenance considerations, recommending a phased implementation.
 
 This comprehensive log should provide all the necessary context to resume development at any point.

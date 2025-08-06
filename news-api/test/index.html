@@ -184,6 +184,45 @@
             font-size: .75rem;
             text-align: center;
         }
+
+        #threat-score-section {
+            margin-bottom: 2rem;
+            padding: 1rem 1.5rem;
+            background-color: var(--surface);
+            border: 1px solid var(--muted);
+        }
+
+        #threat-score-section h2 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
+        #threat-meter-container {
+            width: 100%;
+            height: 20px;
+            background-color: var(--muted);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #threat-meter-fill {
+            height: 100%;
+            width: 0%; /* Will be controlled by JS */
+            transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+        }
+
+        /* Color classes for the meter */
+        .threat-low {
+            background-color: #28a745; /* Green */
+        }
+
+        .threat-medium {
+            background-color: #ffc107; /* Yellow */
+        }
+
+        .threat-high {
+            background-color: #dc3545; /* Red */
+        }
     </style>
 </head>
 <body>
@@ -227,8 +266,13 @@
             <option value="publishedAt">Date</option>
             <option value="rank">Rank</option>
         </select>
+    </div>
 
-        <button id="apply-filters">Apply</button>
+    <div id="threat-score-section">
+        <h2>Today in ThreatFeed: <span id="threat-score-phrase">Loading...</span></h2>
+        <div id="threat-meter-container">
+            <div id="threat-meter-fill"></div>
+        </div>
     </div>
 
     <div id="ad"></div>
@@ -242,10 +286,11 @@
         const rssSources = [
             "https://www.bleepingcomputer.com/feed/",
             "https://feeds.feedburner.com/TheHackersNews",
-            "https://krebsonsecurity.com/feed/",
             "https://blogs.cisco.com/security/feed/",
             "https://www.wired.com/feed/category/security/latest/rss",
-            "https://www.securityweek.com/feed/"
+            "https://www.securityweek.com/feed/",
+			"https://news.sophos.com/en-us/feed/",
+			"https://www.csoonline.com/feed/",
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -339,12 +384,7 @@
                                 const articleDiv = document.createElement('div');
                                 articleDiv.className = 'article';
 
-                                let content = `<h3><a href="${article.url}" target="_blank">${article.title}</a></h3>`;
-                                if (article.imageUrl) {
-                                    content += `<img src="${article.imageUrl}" alt="${article.title}">`;
-                                }
-                                content += `<p>Rank: ${article.rank}</p>`;
-                                content += `<p>${article.description}</p>`;
+                                let content = `<h3><a href="${article.url}" target="_blank">${article.title}</a></h3><p>Rank: ${article.rank}</p>`;
 
                                 articleDiv.innerHTML = content;
                                 newsContainer.appendChild(articleDiv);
@@ -362,9 +402,50 @@
             const fetchAll = () => {
                 fetchAd();
                 fetchNews();
+                fetchThreatScore();
             }
 
-            applyFiltersButton.addEventListener('click', fetchAll);
+            // Add event listeners for instant filter application
+            sourceSelect.addEventListener('change', fetchAll);
+            numArticlesSelect.addEventListener('change', fetchAll);
+            dateStartInput.addEventListener('change', fetchAll);
+            dateEndInput.addEventListener('change', fetchAll);
+            sortBySelect.addEventListener('change', fetchAll);
+
+            const fetchThreatScore = () => {
+                fetch('/today-threat')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const threatPhrase = document.getElementById('threat-score-phrase');
+                        const threatMeterFill = document.getElementById('threat-meter-fill');
+
+                        threatPhrase.textContent = data.phrase;
+
+                        // Update meter fill and color based on score
+                        let meterWidth = (data.score / 5) * 100; // Assuming max rank is around 5 for scaling
+                        if (meterWidth > 100) meterWidth = 100; // Cap at 100%
+
+                        threatMeterFill.style.width = `${meterWidth}%`;
+
+                        threatMeterFill.classList.remove('threat-low', 'threat-medium', 'threat-high');
+                        if (data.phrase.includes('No Worries')) {
+                            threatMeterFill.classList.add('threat-low');
+                        } else if (data.phrase.includes('Attention!')) {
+                            threatMeterFill.classList.add('threat-medium');
+                        } else if (data.phrase.includes('Code Red')) {
+                            threatMeterFill.classList.add('threat-high');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching threat score:', error);
+                        document.getElementById('threat-score-phrase').textContent = 'Error loading score.';
+                    });
+            };
 
             // Initial fetch
             fetchAll();

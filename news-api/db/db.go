@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -17,11 +18,11 @@ import (
 
 var db *sql.DB
 
-func InitDB() {
+func InitDB() error {
 	var err error
 	db, err = sql.Open("sqlite3", "./news.db")
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		return fmt.Errorf("failed to open database: %v", err)
 	}
 
 	createTableSQL := `
@@ -39,9 +40,10 @@ func InitDB() {
 
 	_, err = db.Exec(createTableSQL)
 	if err != nil {
-		log.Fatalf("Failed to create articles table: %v", err)
+		return fmt.Errorf("failed to create articles table: %v", err)
 	}
 	log.Println("Database initialized successfully.")
+	return nil
 }
 
 func calculateRank(article models.NewsArticle) int {
@@ -76,7 +78,58 @@ func insertArticle(article models.NewsArticle) error {
 	return err
 }
 
+// ThreatScore represents the calculated threat score and its corresponding phrase.
+type ThreatScore struct {
+	Score  float64 `json:"score"`
+	Phrase string  `json:"phrase"`
+}
+
+const MIN_ARTICLES_FOR_SCORE = 5 // Minimum articles required for a reliable score
+
+// GetTodayThreatScore calculates the average rank of articles published in the last 24 hours.
+func GetTodayThreatScore() (ThreatScore, error) {
+	var totalRank int
+	var articleCount int
+
+	// Define the time window (last 24 hours)
+	twentyFourHoursAgo := time.Now().Add(-24 * time.Hour)
+
+	rows, err := db.Query("SELECT rank FROM articles WHERE publishedAt >= ?", twentyFourHoursAgo.Format("2006-01-02 15:04:05"))
+	if err != nil {
+		return ThreatScore{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var rank int
+		if err := rows.Scan(&rank); err != nil {
+			log.Printf("Error scanning rank for threat score: %v", err)
+			continue
+		}
+		totalRank += rank
+		articleCount++
+	}
+
+	if articleCount < MIN_ARTICLES_FOR_SCORE {
+		return ThreatScore{Score: 0, Phrase: "No Worries (Insufficient Data)"}, nil
+	}
+
+	averageRank := float64(totalRank) / float64(articleCount)
+
+	phrase := "No Worries" // Default
+	if averageRank >= 1.6 && averageRank <= 3.5 {
+		phrase = "Attention!"
+	} else if averageRank > 3.5 {
+		phrase = "Code Red"
+	}
+
+	return ThreatScore{Score: averageRank, Phrase: phrase}, nil
+}
+
 func GetArticlesFromDB(sourceFilter string, limit int, startDate, endDate time.Time, sortBy string) ([]models.NewsArticle, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
 	var articles []models.NewsArticle
 	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank FROM articles"
 	args := []interface{}{}
