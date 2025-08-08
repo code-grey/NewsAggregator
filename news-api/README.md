@@ -12,11 +12,21 @@ This source has been removed from the list of active RSS feeds due to persistent
 
 1.  **Ensure Go is installed:** [https://golang.org/doc/install](https://golang.org/doc/install)
 2.  **Navigate to this directory:** `cd news-api`
-3.  **Run the API:** `go run main.go db.go models.go`
+3.  **Run for development:** `go run main.go`
 
     The API will start on `http://localhost:8080`.
 
     *Note: The first run will populate the `news.db` SQLite file, which might take a few moments as it fetches articles from all sources.*
+
+## Building for Production
+
+To create a smaller, optimized binary for production, use the following build command. This strips debug information and reduces the file size significantly.
+
+```bash
+go build -ldflags="-s -w" -o news-api-prod main.go
+```
+
+This will create a `news-api-prod` executable in the current directory.
 
 ## API Endpoints
 

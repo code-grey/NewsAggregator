@@ -95,6 +95,8 @@ This section details the work done since the last major update, focusing on stab
 
 ### 9.1 Backend Stability & Debugging
 
+*   **`git reset --hard` Mishap & Re-implementation:** An accidental `git reset --hard` command led to the loss of uncommitted changes, necessitating the re-implementation of several features and fixes. This included re-applying changes to `main.go`, `db.go`, `handlers.go`, and `index.html` to restore the intended functionality.
+
 *   **Persistent `500 Internal Server Error`:** Encountered persistent `500 Internal Server Error` when fetching articles, despite successful database initialization and caching.
     *   **Diagnosis:** Initial attempts to debug by adding detailed error logging to `handlers.go` and `db.go` were unsuccessful in revealing the root cause directly in the browser.
     *   **Root Cause Identification:** Suspected issues with the `db` connection being `nil` or invalid, or `log.Fatalf` calls terminating the server prematurely.

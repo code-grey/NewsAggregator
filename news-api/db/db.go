@@ -14,9 +14,11 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/mmcdole/gofeed"
 	"news-api/models"
+	"github.com/pemistahl/lingua-go"
 )
 
 var db *sql.DB
+var detector lingua.LanguageDetector
 
 func InitDB() error {
 	var err error
@@ -37,25 +39,47 @@ func InitDB() error {
 		rank INTEGER DEFAULT 0
 	);
 	`
-
 	_, err = db.Exec(createTableSQL)
 	if err != nil {
 		return fmt.Errorf("failed to create articles table: %v", err)
 	}
+
+	// Create indexes for faster queries
+	createIndexesSQL := `
+	CREATE INDEX IF NOT EXISTS idx_sourceUrl ON articles (sourceUrl);
+	CREATE INDEX IF NOT EXISTS idx_publishedAt ON articles (publishedAt);
+	`
+	_, err = db.Exec(createIndexesSQL)
+	if err != nil {
+		return fmt.Errorf("failed to create indexes: %v", err)
+	}
+
+	// Optimize language detector to only load models for relevant languages
+	detector = lingua.NewLanguageDetectorBuilder().
+		FromLanguages(lingua.English, lingua.German, lingua.French, lingua.Spanish, lingua.Russian, lingua.Chinese).
+		WithPreloadedLanguageModels().
+		Build()
+
 	log.Println("Database initialized successfully.")
 	return nil
 }
 
 func calculateRank(article models.NewsArticle) int {
 	rank := 0
+	// Refined keywords focusing on active threats and their severity
 	keywords := map[string]int{
-		"vulnerability": 3, "exploit": 3, "breach": 3, "attack": 3, "malware": 3, "ransomware": 3,
-		"security": 2, "cybersecurity": 2, "threat": 2, "phishing": 2, "patch": 2, "zero-day": 2,
-		"data": 1, "privacy": 1, "risk": 1, "compliance": 1, "encryption": 1,
+		// High Impact (Score 5): Direct, immediate threats
+		"zero-day": 5, "exploit in the wild": 5, "active attack": 5, "critical vulnerability": 5, "alert": 5, "warning": 5, "patch now": 5, "ransomware attack": 5, "breach confirmed": 5,
+		// Medium Impact (Score 3): Significant threats, but perhaps not immediate action required
+		"vulnerability": 3, "exploit": 3, "breach": 3, "attack": 3, "malware": 3, "ransomware": 3, "phishing": 3, "threat": 3, "advisory": 3,
+		// Low Impact (Score 1): General cybersecurity news, informative
+		"security": 1, "cybersecurity": 1, "data": 1, "privacy": 1, "risk": 1, "compliance": 1, "encryption": 1, "patch": 1,
 	}
 
+	content := strings.ToLower(article.Title + " " + article.Description)
+
 	for keyword, score := range keywords {
-		if strings.Contains(strings.ToLower(article.Title), keyword) || strings.Contains(strings.ToLower(article.Description), keyword) {
+		if strings.Contains(content, keyword) {
 			rank += score
 		}
 	}
@@ -167,6 +191,7 @@ func GetArticlesFromDB(sourceFilter string, limit int, startDate, endDate time.T
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
+		log.Printf("Error executing query in GetArticlesFromDB: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -184,7 +209,10 @@ func GetArticlesFromDB(sourceFilter string, limit int, startDate, endDate time.T
 }
 
 func StartCachingJob(rssSources []string) {
-	InitDB()
+	if err := InitDB(); err != nil {
+		log.Printf("Failed to initialize database for caching job: %v", err)
+		return
+	}
 	fetchAndCacheNews(rssSources)
 
 	ticker := time.NewTicker(15 * time.Minute)
@@ -225,6 +253,14 @@ func fetchAndCacheNews(rssSources []string) {
 			}
 
 			for _, item := range feed.Items {
+				// Language detection
+				textToDetect := item.Title + " " + item.Description
+				lang, _ := detector.DetectLanguageOf(textToDetect)
+				if lang != lingua.English {
+					log.Printf("Skipping non-English article: %s (Source: %s)", item.Title, source)
+					continue
+				}
+
 				article := models.NewsArticle{
 					Title:       item.Title,
 					Description: p.Sanitize(item.Description),
@@ -263,4 +299,3 @@ func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36")
 	return t.RoundTripper.RoundTrip(req)
 }
-

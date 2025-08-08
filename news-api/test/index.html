@@ -405,12 +405,24 @@
                 fetchThreatScore();
             }
 
+            // Debounce function
+            const debounce = (func, delay) => {
+                let timeout;
+                return function(...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), delay);
+                };
+            };
+
+            const debouncedFetchAll = debounce(fetchAll, 300); // 300ms delay
+
             // Add event listeners for instant filter application
-            sourceSelect.addEventListener('change', fetchAll);
-            numArticlesSelect.addEventListener('change', fetchAll);
-            dateStartInput.addEventListener('change', fetchAll);
-            dateEndInput.addEventListener('change', fetchAll);
-            sortBySelect.addEventListener('change', fetchAll);
+            sourceSelect.addEventListener('change', debouncedFetchAll);
+            numArticlesSelect.addEventListener('change', debouncedFetchAll);
+            dateStartInput.addEventListener('change', debouncedFetchAll);
+            dateEndInput.addEventListener('change', debouncedFetchAll);
+            sortBySelect.addEventListener('change', debouncedFetchAll);
 
             const fetchThreatScore = () => {
                 fetch('/today-threat')
