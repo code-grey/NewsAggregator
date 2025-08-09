@@ -1,5 +1,0 @@
-feat: Optimize database queries and language detection
-
-- Add indexes to sourceUrl and publishedAt columns in the articles table to improve query performance.
-- Reduce memory usage of the language detector by loading only a specific subset of languages instead of all of them.
-- Update README with instructions for creating optimized production builds.

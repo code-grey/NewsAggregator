@@ -11,6 +11,7 @@ type NewsArticle struct {
 	SourceURL   string `json:"sourceUrl"`
 	PublishedAt time.Time `json:"publishedAt"`
 	Rank        int    `json:"rank"`
+	Category    string `json:"category"`
 }
 
 // Ad defines the structure for an ad.

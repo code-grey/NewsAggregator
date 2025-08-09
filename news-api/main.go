@@ -13,6 +13,7 @@ import (
 )
 
 var RssSources = []string{
+	// Cybersecurity News
 	"https://www.bleepingcomputer.com/feed/",
 	"https://feeds.feedburner.com/TheHackersNews",
 	"https://blogs.cisco.com/security/feed",
@@ -20,6 +21,24 @@ var RssSources = []string{
 	"https://www.securityweek.com/feed/",
 	"https://news.sophos.com/en-us/feed/",
 	"https://www.csoonline.com/feed/",
+	// Tech News
+	"https://www.theverge.com/rss/index.xml",
+	"https://techcrunch.com/feed/",
+	"https://arstechnica.com/feed/",
+	"http://www.engadget.com/rss-full.xml",
+	"http://www.fastcodesign.com/rss.xml",
+	"http://www.forbes.com/entrepreneurs/index.xml",
+	"https://blog.pragmaticengineer.com/rss/",
+	"https://browser.engineering/rss.xml",
+	"https://githubengineering.com/atom.xml",
+	"https://joshwcomeau.com/rss.xml",
+	"https://jvns.ca/atom.xml",
+	"https://overreacted.io/rss.xml",
+	"https://signal.org/blog/rss.xml",
+	"https://slack.engineering/feed",
+	"https://shopifyengineering.myshopify.com/blogs/engineering.atom",
+	"https://stripe.com/blog/feed.rss",
+	"https://www.uber.com/blog/engineering/rss/",
 }
 
 // Create a more generous rate limiter that allows 2 requests per second with a burst size of 10.

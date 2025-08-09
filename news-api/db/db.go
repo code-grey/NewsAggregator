@@ -36,7 +36,8 @@ func InitDB() error {
 		url TEXT NOT NULL UNIQUE,
 		sourceUrl TEXT NOT NULL,
 		publishedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-		rank INTEGER DEFAULT 0
+		rank INTEGER DEFAULT 0,
+		category TEXT DEFAULT ''
 	);
 	`
 	_, err = db.Exec(createTableSQL)
@@ -66,17 +67,34 @@ func InitDB() error {
 
 func calculateRank(article models.NewsArticle) int {
 	rank := 0
-	// Refined keywords focusing on active threats and their severity
-	keywords := map[string]int{
-		// High Impact (Score 5): Direct, immediate threats
-		"zero-day": 5, "exploit in the wild": 5, "active attack": 5, "critical vulnerability": 5, "alert": 5, "warning": 5, "patch now": 5, "ransomware attack": 5, "breach confirmed": 5,
-		// Medium Impact (Score 3): Significant threats, but perhaps not immediate action required
-		"vulnerability": 3, "exploit": 3, "breach": 3, "attack": 3, "malware": 3, "ransomware": 3, "phishing": 3, "threat": 3, "advisory": 3,
-		// Low Impact (Score 1): General cybersecurity news, informative
-		"security": 1, "cybersecurity": 1, "data": 1, "privacy": 1, "risk": 1, "compliance": 1, "encryption": 1, "patch": 1,
-	}
-
 	content := strings.ToLower(article.Title + " " + article.Description)
+
+	var keywords map[string]int
+
+	switch article.Category {
+	case "Cybersecurity":
+		keywords = map[string]int{
+			// High Impact (Score 5): Direct, immediate threats
+			"zero-day": 5, "exploit in the wild": 5, "active attack": 5, "critical vulnerability": 5, "alert": 5, "warning": 5, "patch now": 5, "ransomware attack": 5, "breach confirmed": 5,
+			// Medium Impact (Score 3): Significant threats, but perhaps not immediate action required
+			"vulnerability": 3, "exploit": 3, "breach": 3, "attack": 3, "malware": 3, "ransomware": 3, "phishing": 3, "threat": 3, "advisory": 3,
+			// Low Impact (Score 1): General cybersecurity news, informative
+			"security": 1, "cybersecurity": 1, "data": 1, "privacy": 1, "risk": 1, "compliance": 1, "encryption": 1, "patch": 1,
+		}
+	case "Tech":
+		keywords = map[string]int{
+			// High Impact (Score 5): Major announcements, breakthroughs, critical issues
+			"ai": 5, "artificial intelligence": 5, "quantum computing": 5, "breakthrough": 5, "major update": 5, "new chip": 5, "innovation": 5, "future of tech": 5,
+			// Medium Impact (Score 3): Significant developments, new products, industry trends
+			"startup": 3, "funding": 3, "acquisition": 3, "cloud": 3, "5g": 3, "machine learning": 3, "data science": 3, "web3": 3, "metaverse": 3, "robotics": 3,
+			// Low Impact (Score 1): General tech news, reviews, minor updates
+			"review": 1, "gadget": 1, "app": 1, "software": 1, "hardware": 1, "update": 1, "guide": 1, "tips": 1,
+		}
+	default: // General or unknown category
+		keywords = map[string]int{
+			"news": 1, "update": 1, "report": 1,
+		}
+	}
 
 	for keyword, score := range keywords {
 		if strings.Contains(content, keyword) {
@@ -88,14 +106,14 @@ func calculateRank(article models.NewsArticle) int {
 }
 
 func insertArticle(article models.NewsArticle) error {
-	stmt, err := db.Prepare("INSERT OR IGNORE INTO articles(title, description, imageUrl, url, sourceUrl, publishedAt, rank) VALUES(?, ?, ?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT OR IGNORE INTO articles(title, description, imageUrl, url, sourceUrl, publishedAt, rank, category) VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("Error preparing insert statement for article %s: %v", article.Title, err)
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(article.Title, article.Description, article.ImageURL, article.URL, article.SourceURL, article.PublishedAt, article.Rank)
+	_, err = stmt.Exec(article.Title, article.Description, article.ImageURL, article.URL, article.SourceURL, article.PublishedAt, article.Rank, article.Category)
 	if err != nil {
 		log.Printf("Error inserting article %s: %v", article.Title, err)
 	}
@@ -150,12 +168,12 @@ func GetTodayThreatScore() (ThreatScore, error) {
 	return ThreatScore{Score: averageRank, Phrase: phrase}, nil
 }
 
-func GetArticlesFromDB(sourceFilter string, limit int, startDate, endDate time.Time, sortBy string) ([]models.NewsArticle, error) {
+func GetArticlesFromDB(sourceFilter string, categoryFilter string, limit int, startDate, endDate time.Time, sortBy string) ([]models.NewsArticle, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
 	var articles []models.NewsArticle
-	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank FROM articles"
+	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank, category FROM articles"
 	args := []interface{}{}
 
 	whereClauses := []string{}
@@ -163,6 +181,11 @@ func GetArticlesFromDB(sourceFilter string, limit int, startDate, endDate time.T
 	if sourceFilter != "" && sourceFilter != "all" {
 		whereClauses = append(whereClauses, "sourceUrl = ?")
 		args = append(args, sourceFilter)
+	}
+
+	if categoryFilter != "" && categoryFilter != "all" {
+		whereClauses = append(whereClauses, "category = ?")
+		args = append(args, categoryFilter)
 	}
 
 	if !startDate.IsZero() {
@@ -198,7 +221,7 @@ func GetArticlesFromDB(sourceFilter string, limit int, startDate, endDate time.T
 
 	for rows.Next() {
 		var article models.NewsArticle
-		if err := rows.Scan(&article.Title, &article.Description, &article.ImageURL, &article.URL, &article.SourceURL, &article.PublishedAt, &article.Rank); err != nil {
+		if err := rows.Scan(&article.Title, &article.Description, &article.ImageURL, &article.URL, &article.SourceURL, &article.PublishedAt, &article.Rank, &article.Category); err != nil {
 			log.Printf("Error scanning article: %v", err)
 			continue
 		}
@@ -261,11 +284,14 @@ func fetchAndCacheNews(rssSources []string) {
 					continue
 				}
 
+				category := getCategoryForSource(source)
+
 				article := models.NewsArticle{
 					Title:       item.Title,
 					Description: p.Sanitize(item.Description),
 					URL:         item.Link,
 					SourceURL:   source,
+					Category:    category,
 				}
 				article.Rank = calculateRank(article)
 
@@ -298,4 +324,51 @@ type userAgentTransport struct {
 func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36")
 	return t.RoundTripper.RoundTrip(req)
+}
+
+func getCategoryForSource(sourceURL string) string {
+	// Define your source-to-category mapping here
+	cybersecuritySources := []string{
+		"https://www.bleepingcomputer.com/feed/",
+		"https://feeds.feedburner.com/TheHackersNews",
+		"https://blogs.cisco.com/security/feed",
+		"https://www.wired.com/feed/category/security/latest/rss",
+		"https://www.securityweek.com/feed/",
+		"https://news.sophos.com/en-us/feed/",
+		"https://www.csoonline.com/feed/",
+	}
+
+	techSources := []string{
+		"https://www.theverge.com/rss/index.xml",
+		"https://techcrunch.com/feed/",
+		"https://arstechnica.com/feed/",
+		"http://www.engadget.com/rss-full.xml",
+		"http://www.fastcodesign.com/rss.xml",
+		"http://www.forbes.com/entrepreneurs/index.xml",
+		"https://blog.pragmaticengineer.com/rss/",
+		"https://browser.engineering/rss.xml",
+		"https://githubengineering.com/atom.xml",
+		"https://joshwcomeau.com/rss.xml",
+		"https://jvns.ca/atom.xml",
+		"https://overreacted.io/rss.xml",
+		"https://signal.org/blog/rss.xml",
+		"https://slack.engineering/feed",
+		"https://shopifyengineering.myshopify.com/blogs/engineering.atom",
+		"https://stripe.com/blog/feed.rss",
+		"https://www.uber.com/blog/engineering/rss/",
+	}
+
+	for _, s := range cybersecuritySources {
+		if s == sourceURL {
+			return "Cybersecurity"
+		}
+	}
+
+	for _, s := range techSources {
+		if s == sourceURL {
+			return "Tech"
+		}
+	}
+
+	return "General" // Default category if no match
 }

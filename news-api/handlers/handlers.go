@@ -14,6 +14,7 @@ import (
 func GetNews(w http.ResponseWriter, r *http.Request) {
 	// Get query parameters
 	sourceFilter := r.URL.Query().Get("source")
+	categoryFilter := r.URL.Query().Get("category") // New parameter
 	limitStr := r.URL.Query().Get("limit")
 	limit, _ := strconv.Atoi(limitStr)
 	startDateStr := r.URL.Query().Get("start")
@@ -39,7 +40,7 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	articles, err := db.GetArticlesFromDB(sourceFilter, limit, startDate, endDate, sortBy)
+	articles, err := db.GetArticlesFromDB(sourceFilter, categoryFilter, limit, startDate, endDate, sortBy) // Pass categoryFilter
 	if err != nil {
 		log.Printf("Error fetching articles from DB: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
