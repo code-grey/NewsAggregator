@@ -22,8 +22,8 @@ var RssSources = []string{
 	"https://www.csoonline.com/feed/",
 }
 
-// Create a rate limiter that allows 1 request per second with a burst size of 5.
-var limiter = rate.NewLimiter(1, 5)
+// Create a more generous rate limiter that allows 2 requests per second with a burst size of 10.
+var limiter = rate.NewLimiter(2, 10)
 
 func main() {
 	if err := db.InitDB(); err != nil {
@@ -76,9 +76,14 @@ func securityHeadersMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// Middleware for rate limiting
+// Middleware for rate limiting, which excludes the /healthz endpoint.
 func rateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Exclude the /healthz endpoint from rate limiting.
+		if r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if !limiter.Allow() {
 			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 			return
