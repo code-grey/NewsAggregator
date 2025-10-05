@@ -49,9 +49,9 @@ fun NewsArticleItem(article: NewsArticle) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = article.description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                text = article.summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

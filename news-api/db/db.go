@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"news-api/gemini"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +33,7 @@ func InitDB() error {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		title TEXT NOT NULL,
 		description TEXT,
+		summary TEXT,
 		imageUrl TEXT,
 		url TEXT NOT NULL UNIQUE,
 		sourceUrl TEXT NOT NULL,
@@ -106,14 +108,14 @@ func calculateRank(article models.NewsArticle) int {
 }
 
 func insertArticle(article models.NewsArticle) error {
-	stmt, err := db.Prepare("INSERT OR IGNORE INTO articles(title, description, imageUrl, url, sourceUrl, publishedAt, rank, category) VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT OR IGNORE INTO articles(title, description, summary, imageUrl, url, sourceUrl, publishedAt, rank, category) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("Error preparing insert statement for article %s: %v", article.Title, err)
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(article.Title, article.Description, article.ImageURL, article.URL, article.SourceURL, article.PublishedAt, article.Rank, article.Category)
+	_, err = stmt.Exec(article.Title, article.Description, article.Summary, article.ImageURL, article.URL, article.SourceURL, article.PublishedAt, article.Rank, article.Category)
 	if err != nil {
 		log.Printf("Error inserting article %s: %v", article.Title, err)
 	}
@@ -173,7 +175,7 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, limit int, st
 		return nil, fmt.Errorf("database connection is nil")
 	}
 	var articles []models.NewsArticle
-	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank, category FROM articles"
+	query := "SELECT title, description, summary, imageUrl, url, sourceUrl, publishedAt, rank, category FROM articles"
 	args := []interface{}{}
 
 	whereClauses := []string{}
@@ -190,11 +192,11 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, limit int, st
 
 	if !startDate.IsZero() {
 		whereClauses = append(whereClauses, "publishedAt >= ?")
-		args = append(args, startDate.Format("2006-01-02 15:04:05"))
+		args = append(args, startDate.Format("2006-01-02"))
 	}
 	if !endDate.IsZero() {
 		whereClauses = append(whereClauses, "publishedAt <= ?")
-		args = append(args, endDate.Format("2006-01-02 15:04:05"))
+		args = append(args, endDate.Format("2006-01-02"))
 	}
 
 	if len(whereClauses) > 0 {
@@ -221,7 +223,7 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, limit int, st
 
 	for rows.Next() {
 		var article models.NewsArticle
-		if err := rows.Scan(&article.Title, &article.Description, &article.ImageURL, &article.URL, &article.SourceURL, &article.PublishedAt, &article.Rank, &article.Category); err != nil {
+		if err := rows.Scan(&article.Title, &article.Description, &article.Summary, &article.ImageURL, &article.URL, &article.SourceURL, &article.PublishedAt, &article.Rank, &article.Category); err != nil {
 			log.Printf("Error scanning article: %v", err)
 			continue
 		}
@@ -286,9 +288,32 @@ func fetchAndCacheNews(rssSources []string) {
 
 				category := getCategoryForSource(source)
 
+				sanitizedDescription := p.Sanitize(item.Description)
+				var summary string
+				apiKey := gemini.GetAPIKey()
+				if apiKey != "" {
+					var err error
+					summary, err = gemini.SummarizeArticle(apiKey, sanitizedDescription)
+					if err != nil {
+						log.Printf("Error summarizing article with Gemini: %v. Falling back to truncation.", err)
+						if len(sanitizedDescription) > 150 {
+							summary = sanitizedDescription[:150] + "..."
+						} else {
+							summary = sanitizedDescription
+						}
+					}
+				} else {
+					if len(sanitizedDescription) > 150 {
+						summary = sanitizedDescription[:150] + "..."
+					} else {
+						summary = sanitizedDescription
+					}
+				}
+
 				article := models.NewsArticle{
 					Title:       item.Title,
-					Description: p.Sanitize(item.Description),
+					Description: sanitizedDescription,
+					Summary:     summary,
 					URL:         item.Link,
 					SourceURL:   source,
 					Category:    category,
