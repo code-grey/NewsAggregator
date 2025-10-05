@@ -18,6 +18,16 @@ This source has been removed from the list of active RSS feeds due to persistent
 
     *Note: The first run will populate the `news.db` SQLite file, which might take a few moments as it fetches articles from all sources.*
 
+## Article Summarization (Optional)
+
+This API can use the Google Gemini API to provide intelligent summaries of news articles. To enable this feature, you must set the `GEMINI_API_KEY` environment variable.
+
+```bash
+export GEMINI_API_KEY="YOUR_API_KEY"
+```
+
+If the `GEMINI_API_KEY` is not set, the service will fall back to a simple truncation method for generating article summaries.
+
 ## Building for Production
 
 To create a smaller, optimized binary for production, use the following build command. This strips debug information and reduces the file size significantly.
