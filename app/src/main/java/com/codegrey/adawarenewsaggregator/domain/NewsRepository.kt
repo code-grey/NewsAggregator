@@ -13,14 +13,10 @@ class NewsRepository @Inject constructor(
     private val adApiService: AdApiService
 ) {
 
-    fun getNews(
-        category: String? = null,
-        startDate: String? = null,
-        endDate: String? = null
-    ): Flow<NetworkResult<List<com.codegrey.adawarenewsaggregator.data.NewsArticle>>> = flow {
+    fun getNews(): Flow<NetworkResult<List<com.codegrey.adawarenewsaggregator.data.NewsArticle>>> = flow {
         emit(NetworkResult.Loading())
         try {
-            val news = newsApiService.getNews(category, startDate, endDate)
+            val news = newsApiService.getNews()
             emit(NetworkResult.Success(news))
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.message ?: "An unknown error occurred"))
@@ -32,16 +28,6 @@ class NewsRepository @Inject constructor(
         try {
             val ad = adApiService.getAd()
             emit(NetworkResult.Success(ad))
-        } catch (e: Exception) {
-            emit(NetworkResult.Error(e.message ?: "An unknown error occurred"))
-        }
-    }
-
-    fun getTodayThreat(): Flow<NetworkResult<com.codegrey.adawarenewsaggregator.data.ThreatScore>> = flow {
-        emit(NetworkResult.Loading())
-        try {
-            val threatScore = newsApiService.getTodayThreat()
-            emit(NetworkResult.Success(threatScore))
         } catch (e: Exception) {
             emit(NetworkResult.Error(e.message ?: "An unknown error occurred"))
         }
