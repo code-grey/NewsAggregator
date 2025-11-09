@@ -1,5 +1,6 @@
 news.db
 
 # Compiled binaries
+news-api/news-api
 news-api/news-api-*
 news-api/news-api.exe

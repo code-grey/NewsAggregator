@@ -6,7 +6,6 @@ import "time"
 type NewsArticle struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	Summary     string `json:"summary"`
 	ImageURL    string `json:"imageUrl"`
 	URL         string `json:"url"`
 	SourceURL   string `json:"sourceUrl"`
