@@ -91,7 +91,7 @@ The Android application, currently in its early stages, will serve as the primar
   * **Concept:** Allow users to find articles semantically similar to one they are viewing.
   * **Implementation:** Use a small, on-device sentence embedding model (e.g., a fine-tuned Sentence-BERT variant) to generate vector embeddings for article titles/descriptions. Store these embeddings in the client-side SQLite database. Perform cosine similarity calculations on the device.
 
-* **Keep-Alive Service:** Utilize an external cron job service (e.g., cron-job.org) to periodically ping the backend's `/healthz` endpoint. This prevents the Render free-tier service from going to sleep due to inactivity.
+* **Self-Pinging Keep-Alive:** The application includes a self-pinging mechanism to prevent the service from sleeping on free hosting tiers. When the `APP_URL` environment variable is set, the service will ping its own `/healthz` endpoint every 4 minutes.
 * **Improved Error Handling \& Logging:** Enhance logging for better debugging and monitoring in a production environment.
 * **User Authentication/Personalization:** For a more advanced application, implement user accounts to save preferences, custom feeds, or personalized recommendations.
 * **Monetization:** Integrate more sophisticated ad serving or premium features.
