@@ -69,6 +69,7 @@
         }
         #controls button, #controls input[type="date"] {
             padding: .5rem .75rem;
+            text-align: center;
             background-color: var(--surface);
             color: var(--text);
             border: 1px solid var(--muted);
@@ -82,7 +83,7 @@
         }
         #controls .date-wrapper input[type="date"] {
             width: 100%;
-            opacity: 0;
+            background: transparent;
             position: absolute;
             top: 0; left: 0;
             height: 100%;
@@ -198,6 +199,7 @@
         }
 
         #threat-meter-container {
+            display: flex;
             width: 100%;
             height: 20px;
             background-color: var(--muted);
@@ -284,7 +286,7 @@
 
     <div id="threat-score-section">
         <h2>Today in ThreatFeed:</h2>
-        <div id="threat-meter-container" style="display: flex; height: 20px; border-radius: 10px; overflow: hidden; background-color: var(--muted);">
+        <div id="threat-meter-container">
             <!-- Bars will be dynamically added by JS -->
         </div>
         <p style="text-align: center; margin-top: 0.5rem; font-size: 0.875rem; color: var(--muted);" id="threat-score-summary">Loading data...</p>
@@ -399,7 +401,9 @@
                 if (selectedCategory !== 'all') { // New parameter
                     params.append('category', selectedCategory);
                 }
-                if (numArticles !== 'all' && parseInt(numArticles) > 0) {
+                if (numArticles === 'all') {
+                    params.append('limit', '100000'); // Use a large number to approximate fetching all articles
+                } else {
                     params.append('limit', numArticles);
                 }
                 if (startDate) {
@@ -467,8 +471,24 @@
             sourceSelect.addEventListener('change', debouncedFetchAll);
             categorySelect.addEventListener('change', debouncedFetchAll); // New event listener
             numArticlesSelect.addEventListener('change', debouncedFetchAll);
-            dateStartInput.addEventListener('change', debouncedFetchAll);
-            dateEndInput.addEventListener('change', debouncedFetchAll);
+
+            const validateDates = (event) => {
+                const startDate = dateStartInput.value;
+                const endDate = dateEndInput.value;
+
+                if (startDate && endDate && startDate > endDate) {
+                    alert("'From' date cannot be after 'To' date.");
+                    event.target.value = '';
+                }
+            };
+
+            const handleDateChange = (event) => {
+                validateDates(event);
+                debouncedFetchAll();
+            };
+
+            dateStartInput.addEventListener('change', handleDateChange);
+            dateEndInput.addEventListener('change', handleDateChange);
             sortBySelect.addEventListener('change', debouncedFetchAll);
 
             const fetchThreatScore = () => {
