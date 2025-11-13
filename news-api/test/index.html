@@ -223,6 +223,11 @@
         .threat-high {
             background-color: #dc3545; /* Red */
         }
+
+        .threat-bar {
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -241,6 +246,7 @@
             <option value="all">All Categories</option>
             <option value="Cybersecurity">Cybersecurity</option>
             <option value="Tech">Tech</option>
+            <option value="Defense">Defense</option>
             <option value="General">General</option>
         </select>
 
@@ -277,10 +283,11 @@
     </div>
 
     <div id="threat-score-section">
-        <h2>Today in ThreatFeed: <span id="threat-score-phrase">Loading...</span></h2>
-        <div id="threat-meter-container">
-            <div id="threat-meter-fill"></div>
+        <h2>Today in ThreatFeed:</h2>
+        <div id="threat-meter-container" style="display: flex; height: 20px; border-radius: 10px; overflow: hidden; background-color: var(--muted);">
+            <!-- Bars will be dynamically added by JS -->
         </div>
+        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.875rem; color: var(--muted);" id="threat-score-summary">Loading data...</p>
     </div>
 
     <div id="ad"></div>
@@ -305,7 +312,7 @@
             "https://techcrunch.com/feed/",
             "https://arstechnica.com/feed/",
             "http://www.engadget.com/rss-full.xml",
-            "http://www.fastcodesign.com/rss.xml",
+            "http://www.fastcodesign.com/rss.com",
             "http://www.forbes.com/entrepreneurs/index.xml",
             "https://blog.pragmaticengineer.com/rss/",
             "https://browser.engineering/rss.xml",
@@ -315,9 +322,15 @@
             "https://overreacted.io/rss.xml",
             "https://signal.org/blog/rss.xml",
             "https://slack.engineering/feed",
-            "https://shopifyengineering.myshopify.com/blogs/engineering.atom",
             "https://stripe.com/blog/feed.rss",
-            "https://www.uber.com/blog/engineering/rss/",
+            // Defense News
+            "https://idrw.org/category/news-beat/feed/",
+            "https://defence-blog.com/feed",
+            "https://www.defenseone.com/rss/all/",
+            "https://thediplomat.com/category/asia-defense/feed/",
+            "https://www.janes.com/osint-insights/defence-news/feed/",
+            "https://www.militarytimes.com/arc/outboundfeeds/news-rss/",
+            "https://www.defensenews.com/arc/outboundfeeds/home-rss/",
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -467,29 +480,44 @@
                         return response.json();
                     })
                     .then(data => {
-                        const threatPhrase = document.getElementById('threat-score-phrase');
-                        const threatMeterFill = document.getElementById('threat-meter-fill');
+                        const threatMeterContainer = document.getElementById('threat-meter-container');
+                        const threatScoreSummary = document.getElementById('threat-score-summary');
+                        threatMeterContainer.innerHTML = ''; // Clear previous bars
 
-                        threatPhrase.textContent = data.phrase;
-
-                        // Update meter fill and color based on score
-                        let meterWidth = (data.score / 5) * 100; // Assuming max rank is around 5 for scaling
-                        if (meterWidth > 100) meterWidth = 100; // Cap at 100%
-
-                        threatMeterFill.style.width = `${meterWidth}%`;
-
-                        threatMeterFill.classList.remove('threat-low', 'threat-medium', 'threat-high');
-                        if (data.phrase.includes('No Worries')) {
-                            threatMeterFill.classList.add('threat-low');
-                        } else if (data.phrase.includes('Attention!')) {
-                            threatMeterFill.classList.add('threat-medium');
-                        } else if (data.phrase.includes('Code Red')) {
-                            threatMeterFill.classList.add('threat-high');
+                        if (data.TotalArticles === 0) {
+                            threatScoreSummary.textContent = 'No articles found for today.';
+                            return;
                         }
+
+                        const lowPercent = (data.LowRankCount / data.TotalArticles) * 100;
+                        const mediumPercent = (data.MediumRankCount / data.TotalArticles) * 100;
+                        const highPercent = (data.HighRankCount / data.TotalArticles) * 100;
+
+                        // Create and append bars
+                        if (lowPercent > 0) {
+                            const lowBar = document.createElement('div');
+                            lowBar.style.width = `${lowPercent}%`;
+                            lowBar.className = 'threat-bar threat-low';
+                            threatMeterContainer.appendChild(lowBar);
+                        }
+                        if (mediumPercent > 0) {
+                            const mediumBar = document.createElement('div');
+                            mediumBar.style.width = `${mediumPercent}%`;
+                            mediumBar.className = 'threat-bar threat-medium';
+                            threatMeterContainer.appendChild(mediumBar);
+                        }
+                        if (highPercent > 0) {
+                            const highBar = document.createElement('div');
+                            highBar.style.width = `${highPercent}%`;
+                            highBar.className = 'threat-bar threat-high';
+                            threatMeterContainer.appendChild(highBar);
+                        }
+
+                        threatScoreSummary.textContent = `Low: ${data.LowRankCount} (${lowPercent.toFixed(1)}%) | Medium: ${data.MediumRankCount} (${mediumPercent.toFixed(1)}%) | High: ${data.HighRankCount} (${highPercent.toFixed(1)}%)`;
                     })
                     .catch(error => {
                         console.error('Error fetching threat score:', error);
-                        document.getElementById('threat-score-phrase').textContent = 'Error loading score.';
+                        document.getElementById('threat-score-summary').textContent = 'Error loading score data.';
                     });
             };
 

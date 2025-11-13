@@ -118,7 +118,7 @@ This section details the work done since the last major update, focusing on stab
 *   **Duplicate Rank Display:** Fixed a bug in `news-api/test/index.html` that caused the article rank to be displayed twice.
 *   **CSO Online Visibility:** Re-added `https://www.csoonline.com/feed/` to both `news-api/main.go` and `news-api/test/index.html` to make it visible in the source dropdown, acknowledging its mixed-language content for now.
 
-### 9.3 "Today in ThreatFeed" Feature Implementation
+### 9.3 "Today in ThreatFeed" Feature Implementation (Deprecated)
 
 *   **Concept:** Introduced a new feature to provide an at-a-glance summary of the current cybersecurity threat level.
 *   **Scoring Mechanism:**
@@ -146,5 +146,30 @@ This section details the work done since the last major update, focusing on stab
     *   **Proposed Phased Approach:** Start with general advice (V1), then explore curated explanations (V2), and finally advanced PoC linking (V3) with careful risk management.
 *   **Language Detection (Next Step):** Identified the need to implement language detection in the Go backend to filter out non-English articles from mixed-language feeds, ensuring data quality. Lingua-Go was identified as a suitable library.
 *   **Vulnerability to PoC/Explanation Linkage:** Explored the idea of linking vulnerabilities to PoC exploits, MITRE CVEs, and technical explanations. This was deemed a highly valuable but complex feature with significant safety and maintenance considerations, recommending a phased implementation.
+
+### 9.5 ThreatFeed Score Redesign
+
+*   **Concept:** Replaced the single average rank and phrase with a visual representation of the percentage breakdown of high, medium, and low-ranked articles for the day.
+*   **Backend Implementation:**
+    *   Modified `ThreatScore` struct to return `LowRankCount`, `MediumRankCount`, `HighRankCount`, and `TotalArticles`.
+    *   Updated `GetTodayThreatScore()` to calculate and return these counts.
+*   **Frontend Implementation:**
+    *   Modified HTML structure of `#threat-score-section` to accommodate multiple colored bars.
+    *   Updated JavaScript in `fetchThreatScore()` to parse the new API response and dynamically create/style percentage bars.
+    *   Added `threat-bar` CSS class for styling.
+
+### 9.6 New Content Categories (Tech & Defense)
+
+*   **Concept:** Expanded content categories beyond Cybersecurity to include "Tech" and "Defense" news.
+*   **Backend Implementation:**
+    *   Updated `NewsArticle` model and database schema with a `category` field.
+    *   Integrated new RSS feeds for "Tech" and "Defense" news.
+    *   Modified `calculateRank` to use category-specific keywords for ranking.
+    *   Updated `getCategoryForSource` to map new feeds to their respective categories.
+    *   Enabled category filtering in the backend API.
+*   **Frontend Implementation:**
+    *   Added "Tech" and "Defense" options to the category dropdown.
+    *   Updated `rssSources` array to include new feeds.
+    *   Implemented a loading indicator for article fetching.
 
 This comprehensive log should provide all the necessary context to resume development at any point.

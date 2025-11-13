@@ -122,21 +122,22 @@ func insertArticle(article models.NewsArticle) error {
 
 // ThreatScore represents the calculated threat score and its corresponding phrase.
 type ThreatScore struct {
-	Score  float64 `json:"score"`
-	Phrase string  `json:"phrase"`
+	LowRankCount    int `json:"lowRankCount"`
+	MediumRankCount int `json:"mediumRankCount"`
+	HighRankCount   int `json:"highRankCount"`
+	TotalArticles   int `json:"totalArticles"`
 }
 
-const MIN_ARTICLES_FOR_SCORE = 5 // Minimum articles required for a reliable score
+
 
 // GetTodayThreatScore calculates the average rank of articles published in the last 24 hours.
 func GetTodayThreatScore() (ThreatScore, error) {
-	var totalRank int
-	var articleCount int
+	var lowRankCount, mediumRankCount, highRankCount int
+	var totalArticles int
 
-	// Define the time window (last 24 hours)
-	twentyFourHoursAgo := time.Now().Add(-24 * time.Hour)
+	seventyTwoHoursAgo := time.Now().Add(-72 * time.Hour)
 
-	rows, err := db.Query("SELECT rank FROM articles WHERE publishedAt >= ?", twentyFourHoursAgo.Format("2006-01-02 15:04:05"))
+	rows, err := db.Query("SELECT rank FROM articles WHERE publishedAt >= ?", seventyTwoHoursAgo.Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return ThreatScore{}, err
 	}
@@ -148,24 +149,27 @@ func GetTodayThreatScore() (ThreatScore, error) {
 			log.Printf("Error scanning rank for threat score: %v", err)
 			continue
 		}
-		totalRank += rank
-		articleCount++
+		totalArticles++
+		// Define rank ranges for low, medium, high
+		// Assuming rank 0-1 is low, 2-3 is medium, 4-5 is high based on calculateRank
+		if rank <= 1 {
+			lowRankCount++
+		} else if rank <= 3 {
+			mediumRankCount++
+		} else { // rank > 3
+			highRankCount++
+		}
 	}
 
-	if articleCount < MIN_ARTICLES_FOR_SCORE {
-		return ThreatScore{Score: 0, Phrase: "No Worries (Insufficient Data)"}, nil
-	}
+	
+		
 
-	averageRank := float64(totalRank) / float64(articleCount)
-
-	phrase := "No Worries" // Default
-	if averageRank >= 1.6 && averageRank <= 3.5 {
-		phrase = "Attention!"
-	} else if averageRank > 3.5 {
-		phrase = "Code Red"
-	}
-
-	return ThreatScore{Score: averageRank, Phrase: phrase}, nil
+	return ThreatScore{
+		LowRankCount:    lowRankCount,
+		MediumRankCount: mediumRankCount,
+		HighRankCount:   highRankCount,
+		TotalArticles:   totalArticles,
+	}, nil
 }
 
 func GetArticlesFromDB(sourceFilter string, categoryFilter string, limit int, startDate, endDate time.Time, sortBy string) ([]models.NewsArticle, error) {
@@ -338,24 +342,30 @@ func getCategoryForSource(sourceURL string) string {
 		"https://www.csoonline.com/feed/",
 	}
 
-	techSources := []string{
+		techSources := []string{
 		"https://www.theverge.com/rss/index.xml",
 		"https://techcrunch.com/feed/",
 		"https://arstechnica.com/feed/",
 		"http://www.engadget.com/rss-full.xml",
-		"http://www.fastcodesign.com/rss.xml",
+		"http://www.fastcodesign.com/rss.com",
 		"http://www.forbes.com/entrepreneurs/index.xml",
 		"https://blog.pragmaticengineer.com/rss/",
 		"https://browser.engineering/rss.xml",
-		"https://githubengineering.com/atom.xml",
+		"https://githubengineering.com/atom.com",
 		"https://joshwcomeau.com/rss.xml",
 		"https://jvns.ca/atom.xml",
-		"https://overreacted.io/rss.xml",
-		"https://signal.org/blog/rss.xml",
+		"https://overreacted.io/rss.com",
+		"https://signal.org/blog/rss.com",
 		"https://slack.engineering/feed",
-		"https://shopifyengineering.myshopify.com/blogs/engineering.atom",
 		"https://stripe.com/blog/feed.rss",
-		"https://www.uber.com/blog/engineering/rss/",
+	}
+
+	defenseSources := []string{
+		"https://www.defenseone.com/rss/all/",
+		"https://thediplomat.com/category/asia-defense/feed/",
+		"https://www.janes.com/osint-insights/defence-news/feed/",
+		"https://www.militarytimes.com/arc/outboundfeeds/news-rss/",
+		"https://www.defensenews.com/arc/outboundfeeds/home-rss/",
 	}
 
 	for _, s := range cybersecuritySources {
@@ -367,6 +377,12 @@ func getCategoryForSource(sourceURL string) string {
 	for _, s := range techSources {
 		if s == sourceURL {
 			return "Tech"
+		}
+	}
+
+	for _, s := range defenseSources {
+		if s == sourceURL {
+			return "Defense"
 		}
 	}
 

@@ -36,9 +36,13 @@ var RssSources = []string{
 	"https://overreacted.io/rss.xml",
 	"https://signal.org/blog/rss.xml",
 	"https://slack.engineering/feed",
-	"https://shopifyengineering.myshopify.com/blogs/engineering.atom",
 	"https://stripe.com/blog/feed.rss",
-	"https://www.uber.com/blog/engineering/rss/",
+	// Defense News
+	"https://www.defenseone.com/rss/all/",
+	"https://thediplomat.com/category/asia-defense/feed/",
+	"https://www.janes.com/osint-insights/defence-news/feed/",
+	"https://www.militarytimes.com/arc/outboundfeeds/news-rss/",
+	"https://www.defensenews.com/arc/outboundfeeds/home-rss/",
 }
 
 // Create a more generous rate limiter that allows 2 requests per second with a burst size of 10.
