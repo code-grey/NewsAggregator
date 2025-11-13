@@ -171,14 +171,6 @@
         .article p {
             margin: 0;
         }
-        #ad {
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-        #ad img {
-            max-width: 100%;
-            border: 1px solid var(--muted);
-        }
         footer {
             margin-top: 3rem;
             color: var(--muted);
@@ -292,8 +284,6 @@
         <p style="text-align: center; margin-top: 0.5rem; font-size: 0.875rem; color: var(--muted);" id="threat-score-summary">Loading data...</p>
     </div>
 
-    <div id="ad"></div>
-
     <h2>Latest Articles</h2>
     <div id="news"></div>
 
@@ -344,7 +334,6 @@
             const sortBySelect = document.getElementById('sort-by');
             const applyFiltersButton = document.getElementById('apply-filters');
             const newsContainer = document.getElementById('news');
-            const adContainer = document.getElementById('ad');
 
             // Populate source dropdown
             rssSources.forEach(sourceUrl => {
@@ -358,30 +347,6 @@
                 option.textContent = domain.replace('www.', '').replace('.com', '').replace('.org', '').replace('.net', '').replace('rss', '').replace('all', '').replace('/', '');
                 sourceSelect.appendChild(option);
             });
-
-            const fetchAd = () => {
-                return fetch('/ad')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        adContainer.innerHTML = '';
-                        const adLink = document.createElement('a');
-                        adLink.href = data.targetUrl;
-                        adLink.target = '_blank';
-                        const adImg = document.createElement('img');
-                        adImg.src = data.imageUrl;
-                        adLink.appendChild(adImg);
-                        adContainer.appendChild(adLink);
-                    })
-                    .catch(error => {
-                        console.error('There has been a problem with your fetch operation:', error);
-                        adContainer.innerHTML = '<p>Advertisement could not be loaded.</p>';
-                    });
-            };
 
             const fetchNews = () => {
                 newsContainer.innerHTML = '<p>Loading articles...</p>'; // Add loading message
@@ -450,7 +415,6 @@
             };
 
             const fetchAll = () => {
-                fetchAd();
                 fetchNews();
                 fetchThreatScore();
             }

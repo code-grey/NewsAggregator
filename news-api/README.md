@@ -31,7 +31,6 @@ This will create a `news-api-prod` executable in the current directory.
 ## API Endpoints
 
 *   **`/news`**: Fetches and returns news articles. Supports `source`, `limit`, `start`, and `end` query parameters.
-*   **`/ad`**: Returns a mock ad object.
 
 ## Environment Variables
 

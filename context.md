@@ -14,7 +14,7 @@ The project started with a Go backend for news aggregation and a simple HTML fro
 *   **Frontend HTML Update (`news-api/test/index.html`):**
     *   Added the SecurityWeek RSS feed to the `rssSources` array in the JavaScript.
     *   Improved the display of articles by changing the `border-radius` from `9999px` (pill shape) to `4px` (card format).
-    *   Enhanced ad display and error handling in the JavaScript `fetchAd` and `fetchNews` functions.
+    *   Enhanced error handling in the JavaScript `fetchNews` function.
     *   Modified the domain extraction logic for RSS sources to handle `feedburner.com` URLs more gracefully.
 *   **Backend Port Conflict:** The server failed to start due to port 8080 being in use.
     *   Initially attempted to change the port to 8081 in `news-api/main.go`.

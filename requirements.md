@@ -1,10 +1,10 @@
-You are a senior Android developer. Your task is to rapidly prototype an Android application named "Ad-Aware News Aggregator." The goal is to create a complete, minimal, and functional project structure that can be easily built upon. The project must strictly adhere to modern Android development best practices.
+You are a senior Android developer. Your task is to rapidly prototype an Android application named "News Aggregator." The goal is to create a complete, minimal, and functional project structure that can be easily built upon. The project must strictly adhere to modern Android development best practices.
 
-**Project Name:** AdAwareNewsAggregator
-**Package Name:** com.codegrey.adawarenewsaggregator
+**Project Name:** NewsAggregator
+**Package Name:** com.codegrey.newsaggregator
 
 **Core Requirements:**
-1.  **Application Logic:** The app will fetch news articles from a RESTful API and display them in a list. It will also simulate the fetching and displaying of banner ads from a separate, mock API.
+1.  **Application Logic:** The app will fetch news articles from a RESTful API and display them in a list.
 2.  **Architecture:** Implement the MVVM (Model-View-ViewModel) pattern with a Repository layer.
 3.  **UI Framework:** Use Jetpack Compose for the entire user interface.
 4.  **Language:** All code must be in Kotlin.
@@ -31,26 +31,23 @@ Generate the boilerplate code for the following components, including clear comm
 
 * **Models (`data` package):**
     * `NewsArticle.kt`: A data class representing a news article (e.g., `title`, `description`, `imageUrl`, `url`).
-    * `Ad.kt`: A data class representing an ad (e.g., `imageUrl`, `targetUrl`).
     * `NetworkResult.kt`: A sealed class to handle network states (e.g., `Success`, `Error`, `Loading`).
 
 * **API Service (`data` package):**
     * `NewsApiService.kt`: A Retrofit interface with a function to get a list of news articles.
-    * `AdApiService.kt`: A Retrofit interface for a mock ad API. This should return a single `Ad` object.
 
 * **Repository (`domain` package):**
-    * `NewsRepository.kt`: A class that uses the `NewsApiService` and `AdApiService`. Implement two functions: one to fetch news and another to fetch an ad. Use a Flow to emit `NetworkResult` states.
+    * `NewsRepository.kt`: A class that uses the `NewsApiService`. Implement a function to fetch news. Use a Flow to emit `NetworkResult` states.
 
 * **Hilt Modules (`di` package):**
-    * `AppModule.kt`: A Hilt module that provides singletons for the `Retrofit` instance, `NewsApiService`, `AdApiService`, and `NewsRepository`.
+    * `AppModule.kt`: A Hilt module that provides singletons for the `Retrofit` instance, `NewsApiService`, and `NewsRepository`.
 
 * **ViewModel (`ui.news` package):**
-    * `NewsViewModel.kt`: A class that extends `ViewModel`. It should use the `NewsRepository` to fetch data and expose the news list and ad data as a `StateFlow`. Handle all network states within this ViewModel.
+    * `NewsViewModel.kt`: A class that extends `ViewModel`. It should use the `NewsRepository` to fetch data and expose the news list as a `StateFlow`. Handle all network states within this ViewModel.
 
 * **UI Composables (`ui.news` package):**
     * `NewsScreen.kt`: A Composable function that takes the `NewsViewModel` state and displays the UI.
     * `NewsList.kt`: A Composable to display the list of `NewsArticle` items.
-    * `AdBanner.kt`: A Composable to display the `Ad` banner.
     * Handle the different `NetworkResult` states (`Loading`, `Success`, `Error`) in the UI.
 
 * **Main Application Class:**

@@ -13,9 +13,3 @@ type NewsArticle struct {
 	Rank        int    `json:"rank"`
 	Category    string `json:"category"`
 }
-
-// Ad defines the structure for an ad.
-type Ad struct {
-	ImageURL  string `json:"imageUrl"`
-	TargetURL string `json:"targetUrl"`
-}

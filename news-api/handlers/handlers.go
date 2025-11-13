@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"news-api/db"
-	"news-api/models"
 )
 
 func GetNews(w http.ResponseWriter, r *http.Request) {
@@ -54,15 +53,6 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(articles)
 }
 
-func GetAd(w http.ResponseWriter, r *http.Request) {
-	ad := models.Ad{
-		ImageURL:  "https://via.placeholder.com/300x50.png?text=Your+Ad+Here",
-		TargetURL: "https://www.google.com",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ad)
-}
 
 func GetTodayThreat(w http.ResponseWriter, r *http.Request) {
 	threatScore, err := db.GetTodayThreatScore()

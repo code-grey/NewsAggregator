@@ -34,8 +34,8 @@ The backend is a lightweight Go application responsible for:
 
 * **`main.go`**: The entry point of the application. It sets up the HTTP server, defines routes, and initializes the background news caching job. It dynamically binds to a port specified by the `PORT` environment variable (defaulting to 8080 for local development).
 * **`db/db.go`**: Handles all database interactions. It initializes the SQLite database, defines functions for inserting and retrieving articles, and contains the `StartCachingJob` function which periodically fetches and caches news. It also includes the keyword-based ranking logic.
-* **`handlers/handlers.go`**: Contains the HTTP handler functions for the API endpoints, such as `/news` (to retrieve articles) and `/ad` (for advertisement data). It also includes a `/healthz` endpoint for health checks.
-* **`models/models.go`**: Defines the data structures (e.g., `NewsArticle`, `Ad`) used throughout the application.
+* **`handlers/handlers.go`**: Contains the HTTP handler functions for the API endpoints, such as `/news` (to retrieve articles). It also includes a `/healthz` endpoint for health checks.
+* **`models/models.go`**: Defines the data structures (e.g., `NewsArticle`) used throughout the application.
 
 ### Features Implemented:
 
@@ -57,7 +57,7 @@ The backend is designed for deployment on platforms like Render's free tier. Key
 ### Web Frontend (`news-api/test/index.html`):
 
 * A simple HTML page with embedded JavaScript and CSS.
-* Fetches news and ad data from the backend API.
+* Fetches news data from the backend API.
 * Provides controls for source selection, article limit, date range, and sorting (including by rank).
 * Displays articles in a card-like format.
 
