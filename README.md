@@ -14,11 +14,11 @@ Tired of hopping between different news sites to get your daily dose of cybersec
 
 ### For Developers
 
-Want to run the project locally or contribute to the code? Here's how to get started:
+Want to run the project locally? Here's how to get started:
 
 1.  **Clone the repository:**
     ```
-    git clone https://github.com/your-username/news-aggregator.git
+    [git clone https://github.com/code-grey/NewsAggregator.git](https://github.com/code-grey/NewsAggregator.git)
     ```
 2.  **Navigate to the `news-api` directory:**
     ```
