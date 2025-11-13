@@ -82,7 +82,7 @@
         }
         #controls .date-wrapper input[type="date"] {
             width: 100%;
-            opacity: 0;
+            background: transparent;
             position: absolute;
             top: 0; left: 0;
             height: 100%;
@@ -399,7 +399,9 @@
                 if (selectedCategory !== 'all') { // New parameter
                     params.append('category', selectedCategory);
                 }
-                if (numArticles !== 'all' && parseInt(numArticles) > 0) {
+                if (numArticles === 'all') {
+                    params.append('limit', '100000'); // Use a large number to approximate fetching all articles
+                } else {
                     params.append('limit', numArticles);
                 }
                 if (startDate) {
