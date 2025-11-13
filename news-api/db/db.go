@@ -135,10 +135,10 @@ func GetTodayThreatScore() (ThreatScore, error) {
 	var lowRankCount, mediumRankCount, highRankCount int
 	var totalArticles int
 
-	// Use a very large time window to ensure we get a threat score for testing
-	tenYearsAgo := time.Now().AddDate(-10, 0, 0)
+	// Calculate the time 24 hours ago from the current time.
+	twentyFourHoursAgo := time.Now().Add(-24 * time.Hour)
 
-	rows, err := db.Query("SELECT rank FROM articles WHERE publishedAt >= ?", tenYearsAgo.Format("2006-01-02 15:04:05"))
+	rows, err := db.Query("SELECT rank FROM articles WHERE publishedAt >= ?", twentyFourHoursAgo.Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return ThreatScore{}, err
 	}
