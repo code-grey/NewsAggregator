@@ -399,7 +399,9 @@
                 if (selectedCategory !== 'all') { // New parameter
                     params.append('category', selectedCategory);
                 }
-                if (numArticles !== 'all' && parseInt(numArticles) > 0) {
+                if (numArticles === 'all') {
+                    params.append('limit', '100000'); // Use a large number to approximate fetching all articles
+                } else {
                     params.append('limit', numArticles);
                 }
                 if (startDate) {

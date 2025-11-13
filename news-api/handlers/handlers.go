@@ -17,6 +17,9 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 	categoryFilter := r.URL.Query().Get("category") // New parameter
 	limitStr := r.URL.Query().Get("limit")
 	limit, _ := strconv.Atoi(limitStr)
+	if limit == 0 {
+		limit = 20 // Default limit
+	}
 	startDateStr := r.URL.Query().Get("start")
 	endDateStr := r.URL.Query().Get("end")
 	sortBy := r.URL.Query().Get("sortBy")
