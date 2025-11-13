@@ -60,7 +60,6 @@ func main() {
 	fs := http.FileServer(http.Dir("./test"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.HandleFunc("/news", handlers.GetNews)
-	mux.HandleFunc("/ad", handlers.GetAd)
 	mux.HandleFunc("/today-threat", handlers.GetTodayThreat)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
