@@ -33,6 +33,11 @@ This will create a `news-api-prod` executable in the current directory.
 *   **`/news`**: Fetches and returns news articles. Supports `source`, `limit`, `start`, and `end` query parameters.
 *   **`/ad`**: Returns a mock ad object.
 
+## Environment Variables
+
+- **`PORT`**: The port on which the server will listen. Defaults to `8080`.
+- **`APP_URL`** (Optional but Recommended): The publicly accessible URL of your deployed application (e.g., `https://your-app.onrender.com`). If provided, the application will ping its own `/healthz` endpoint every 4 minutes to prevent it from sleeping on free hosting tiers.
+
 ## Security Considerations
 
 This API includes basic security measures such as rate limiting and security headers. For production deployment, it is highly recommended to deploy this API behind a reverse proxy (e.g., Nginx, Caddy) to handle TLS encryption (HTTPS).

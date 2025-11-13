@@ -55,6 +55,9 @@ func main() {
 	// Start the background caching job
 	db.StartCachingJob(RssSources)
 
+	// Start the self-ping mechanism to keep the service alive on free tiers.
+	go startSelfPing()
+
 	// The main handler is now wrapped in our security middlewares.
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("./test"))
@@ -97,6 +100,35 @@ func securityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// startSelfPing periodically pings the /healthz endpoint to keep the service alive on free hosting tiers.
+func startSelfPing() {
+	appURL := os.Getenv("APP_URL")
+	if appURL == "" {
+		log.Println("APP_URL not set, self-pinging disabled.")
+		return
+	}
+
+	healthzURL := appURL + "/healthz"
+	ticker := time.NewTicker(4 * time.Minute) // Ping every 4 minutes
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			log.Println("Pinging self at", healthzURL)
+			resp, err := http.Get(healthzURL)
+			if err != nil {
+				log.Printf("Self-ping failed: %v", err)
+				continue
+			}
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("Self-ping returned non-200 status: %s", resp.Status)
+			}
+			resp.Body.Close()
+		}
+	}
 }
 
 // Middleware for rate limiting, which excludes the /healthz endpoint.
