@@ -105,7 +105,7 @@ func calculateRank(article models.NewsArticle) int {
 	return rank
 }
 
-func insertArticle(article models.NewsArticle) error {
+func InsertArticle(article models.NewsArticle) error {
 	stmt, err := db.Prepare("INSERT OR IGNORE INTO articles(title, description, imageUrl, url, sourceUrl, publishedAt, rank, category) VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("Error preparing insert statement for article %s: %v", article.Title, err)
@@ -310,7 +310,7 @@ func fetchAndCacheNews(rssSources []string) {
 					article.PublishedAt = time.Now()
 				}
 
-				if err := insertArticle(article); err != nil {
+				if err := InsertArticle(article); err != nil {
 					// log.Printf("Error inserting article %s: %v", article.Title, err) // Log only if not a unique constraint violation
 				}
 			}
