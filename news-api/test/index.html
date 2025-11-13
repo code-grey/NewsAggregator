@@ -69,6 +69,7 @@
         }
         #controls button, #controls input[type="date"] {
             padding: .5rem .75rem;
+            text-align: center;
             background-color: var(--surface);
             color: var(--text);
             border: 1px solid var(--muted);
@@ -469,8 +470,24 @@
             sourceSelect.addEventListener('change', debouncedFetchAll);
             categorySelect.addEventListener('change', debouncedFetchAll); // New event listener
             numArticlesSelect.addEventListener('change', debouncedFetchAll);
-            dateStartInput.addEventListener('change', debouncedFetchAll);
-            dateEndInput.addEventListener('change', debouncedFetchAll);
+
+            const validateDates = (event) => {
+                const startDate = dateStartInput.value;
+                const endDate = dateEndInput.value;
+
+                if (startDate && endDate && startDate > endDate) {
+                    alert("'From' date cannot be after 'To' date.");
+                    event.target.value = '';
+                }
+            };
+
+            const handleDateChange = (event) => {
+                validateDates(event);
+                debouncedFetchAll();
+            };
+
+            dateStartInput.addEventListener('change', handleDateChange);
+            dateEndInput.addEventListener('change', handleDateChange);
             sortBySelect.addEventListener('change', debouncedFetchAll);
 
             const fetchThreatScore = () => {
