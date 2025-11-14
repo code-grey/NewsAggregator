@@ -173,7 +173,7 @@ func GetTodayThreatScore() (ThreatScore, error) {
 	}, nil
 }
 
-func GetArticlesFromDB(sourceFilter string, categoryFilter string, limit int, startDate, endDate time.Time, sortBy string) ([]models.NewsArticle, error) {
+func GetArticlesFromDB(sourceFilter string, categoryFilter string, searchFilter string, limit int, startDate, endDate time.Time, sortBy string) ([]models.NewsArticle, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
@@ -191,6 +191,12 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, limit int, st
 	if categoryFilter != "" && categoryFilter != "all" {
 		whereClauses = append(whereClauses, "category = ?")
 		args = append(args, categoryFilter)
+	}
+
+	if searchFilter != "" {
+		whereClauses = append(whereClauses, "(LOWER(title) LIKE ? OR LOWER(description) LIKE ?)")
+		searchPattern := "%" + strings.ToLower(searchFilter) + "%"
+		args = append(args, searchPattern, searchPattern)
 	}
 
 	if !startDate.IsZero() {

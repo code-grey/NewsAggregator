@@ -14,6 +14,7 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 	// Get query parameters
 	sourceFilter := r.URL.Query().Get("source")
 	categoryFilter := r.URL.Query().Get("category") // New parameter
+	searchFilter := r.URL.Query().Get("search")
 	limitStr := r.URL.Query().Get("limit")
 	limit, _ := strconv.Atoi(limitStr)
 	if limit == 0 {
@@ -42,7 +43,7 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	articles, err := db.GetArticlesFromDB(sourceFilter, categoryFilter, limit, startDate, endDate, sortBy) // Pass categoryFilter
+	articles, err := db.GetArticlesFromDB(sourceFilter, categoryFilter, searchFilter, limit, startDate, endDate, sortBy) // Pass categoryFilter
 	if err != nil {
 		log.Printf("Error fetching articles from DB: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
