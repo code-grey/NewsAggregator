@@ -244,6 +244,9 @@
             <option value="General">General</option>
         </select>
 
+        <label for="search-input">Search:</label>
+        <input type="text" id="search-input" placeholder="Enter keywords..." style="padding: .5rem .75rem; background-color: var(--surface); color: var(--text); border: 1px solid var(--muted); font-family: inherit; font-size: .875rem;">
+
         <label for="num-articles">Limit:</label>
         <select id="num-articles">
             <option value="5">5</option>
@@ -332,6 +335,7 @@
             const dateStartInput = document.getElementById('date-start');
             const dateEndInput = document.getElementById('date-end');
             const sortBySelect = document.getElementById('sort-by');
+            const searchInput = document.getElementById('search-input');
             const applyFiltersButton = document.getElementById('apply-filters');
             const newsContainer = document.getElementById('news');
 
@@ -352,6 +356,7 @@
                 newsContainer.innerHTML = '<p>Loading articles...</p>'; // Add loading message
                 const selectedSource = sourceSelect.value;
                 const selectedCategory = categorySelect.value; // New parameter
+                const searchQuery = searchInput.value;
                 const numArticles = numArticlesSelect.value;
                 const startDate = dateStartInput.value;
                 const endDate = dateEndInput.value;
@@ -365,6 +370,9 @@
                 }
                 if (selectedCategory !== 'all') { // New parameter
                     params.append('category', selectedCategory);
+                }
+                if (searchQuery) {
+                    params.append('search', searchQuery);
                 }
                 if (numArticles === 'all') {
                     params.append('limit', '100000'); // Use a large number to approximate fetching all articles
@@ -435,6 +443,7 @@
             sourceSelect.addEventListener('change', debouncedFetchAll);
             categorySelect.addEventListener('change', debouncedFetchAll); // New event listener
             numArticlesSelect.addEventListener('change', debouncedFetchAll);
+            searchInput.addEventListener('input', debouncedFetchAll);
 
             const validateDates = (event) => {
                 const startDate = dateStartInput.value;
