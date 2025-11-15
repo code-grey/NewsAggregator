@@ -122,15 +122,16 @@ func InsertArticle(article models.NewsArticle) error {
 
 // ThreatScore represents the calculated threat score and its corresponding phrase.
 type ThreatScore struct {
-	LowRankCount    int `json:"lowRankCount"`
-	MediumRankCount int `json:"mediumRankCount"`
-	HighRankCount   int `json:"highRankCount"`
-	TotalArticles   int `json:"totalArticles"`
+	LowRankCount    int    `json:"lowRankCount"`
+	MediumRankCount int    `json:"mediumRankCount"`
+	HighRankCount   int    `json:"highRankCount"`
+	TotalArticles   int    `json:"totalArticles"`
+	ThreatLevel     string `json:"threatLevel"`
 }
 
 
 
-// GetTodayThreatScore calculates the average rank of articles published in the last 24 hours.
+// GetTodayThreatScore calculates the threat score based on articles published in the last 24 hours.
 func GetTodayThreatScore() (ThreatScore, error) {
 	var lowRankCount, mediumRankCount, highRankCount int
 	var totalArticles int
@@ -152,24 +153,32 @@ func GetTodayThreatScore() (ThreatScore, error) {
 		}
 		totalArticles++
 		// Define rank ranges for low, medium, high
-		// Assuming rank 0-1 is low, 2-3 is medium, 4-5 is high based on calculateRank
-		if rank <= 1 {
+		if rank < 2 { // Ranks 0-1 are considered low
 			lowRankCount++
-		} else if rank <= 3 {
+		} else if rank < 5 { // Ranks 2-4 are medium
 			mediumRankCount++
-		} else { // rank > 3
+		} else { // Ranks 5+ are high
 			highRankCount++
 		}
 	}
 
-	
-		
+	var threatLevel string
+	if totalArticles == 0 {
+		threatLevel = "No Threats Reported"
+	} else if highRankCount > 0 {
+		threatLevel = "Code Red"
+	} else if mediumRankCount > 0 {
+		threatLevel = "Attention"
+	} else {
+		threatLevel = "Business as Usual"
+	}
 
 	return ThreatScore{
 		LowRankCount:    lowRankCount,
 		MediumRankCount: mediumRankCount,
 		HighRankCount:   highRankCount,
 		TotalArticles:   totalArticles,
+		ThreatLevel:     threatLevel,
 	}, nil
 }
 

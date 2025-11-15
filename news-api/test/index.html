@@ -280,9 +280,9 @@
     </div>
 
     <div id="threat-score-section">
-        <h2>Today in ThreatFeed:</h2>
+        <h2 id="threat-level-title">Today in ThreatFeed:</h2>
         <div id="threat-meter-container">
-            <!-- Bars will be dynamically added by JS -->
+            <div id="threat-meter-fill"></div>
         </div>
         <p style="text-align: center; margin-top: 0.5rem; font-size: 0.875rem; color: var(--muted);" id="threat-score-summary">Loading data...</p>
     </div>
@@ -473,40 +473,26 @@
                         return response.json();
                     })
                     .then(data => {
-                        const threatMeterContainer = document.getElementById('threat-meter-container');
+                        const threatMeterFill = document.getElementById('threat-meter-fill');
                         const threatScoreSummary = document.getElementById('threat-score-summary');
-                        threatMeterContainer.innerHTML = ''; // Clear previous bars
+                        const threatLevelTitle = document.getElementById('threat-level-title');
 
-                        if (data.TotalArticles === 0) {
-                            threatScoreSummary.textContent = 'No articles found for today.';
-                            return;
+                        threatLevelTitle.textContent = `Today in ThreatFeed: ${data.threatLevel}`;
+
+                        let meterClass = 'threat-low';
+                        let summaryText = `Low: ${data.lowRankCount} | Medium: ${data.mediumRankCount} | High: ${data.highRankCount}`;
+
+                        if (data.threatLevel === 'Code Red') {
+                            meterClass = 'threat-high';
+                        } else if (data.threatLevel === 'Attention') {
+                            meterClass = 'threat-medium';
                         }
 
-                        const lowPercent = (data.LowRankCount / data.TotalArticles) * 100;
-                        const mediumPercent = (data.MediumRankCount / data.TotalArticles) * 100;
-                        const highPercent = (data.HighRankCount / data.TotalArticles) * 100;
+                        threatMeterFill.className = 'threat-bar ' + meterClass;
+                        threatMeterFill.style.width = '100%';
 
-                        // Create and append bars
-                        if (lowPercent > 0) {
-                            const lowBar = document.createElement('div');
-                            lowBar.style.width = `${lowPercent}%`;
-                            lowBar.className = 'threat-bar threat-low';
-                            threatMeterContainer.appendChild(lowBar);
-                        }
-                        if (mediumPercent > 0) {
-                            const mediumBar = document.createElement('div');
-                            mediumBar.style.width = `${mediumPercent}%`;
-                            mediumBar.className = 'threat-bar threat-medium';
-                            threatMeterContainer.appendChild(mediumBar);
-                        }
-                        if (highPercent > 0) {
-                            const highBar = document.createElement('div');
-                            highBar.style.width = `${highPercent}%`;
-                            highBar.className = 'threat-bar threat-high';
-                            threatMeterContainer.appendChild(highBar);
-                        }
+                        threatScoreSummary.textContent = summaryText;
 
-                        threatScoreSummary.textContent = `Low: ${data.LowRankCount} (${lowPercent.toFixed(1)}%) | Medium: ${data.MediumRankCount} (${mediumPercent.toFixed(1)}%) | High: ${data.HighRankCount} (${highPercent.toFixed(1)}%)`;
                     })
                     .catch(error => {
                         console.error('Error fetching threat score:', error);
