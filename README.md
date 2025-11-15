@@ -18,7 +18,7 @@ Want to run the project locally? Here's how to get started:
 
 1.  **Clone the repository:**
     ```
-    [git clone https://github.com/code-grey/NewsAggregator.git](https://github.com/code-grey/NewsAggregator.git)
+    git clone https://github.com/code-grey/NewsAggregator.git
     ```
 2.  **Navigate to the `news-api` directory:**
     ```
@@ -35,15 +35,15 @@ Want to run the project locally? Here's how to get started:
 
 ## Contributing
 
-We'd love your help to make this project even better! Whether you're a seasoned developer or just starting out, there are plenty of ways to contribute. Check out the "Future Enhancements" section for ideas, or feel free to propose your own.
+We'd love your help to make this project even better! Whether you're a seasoned developer or just starting out, there are plenty of ways to contribute. Check out the "Future Enhancements" section for ideas, or feel free to propose your own (just open an issue).
 
-Got a pun about cybersecurity? We'd love to hear it. Seriously.
+P.S. Got a pun about cybersecurity? We'd love to hear it. Seriously, append it to your final commit in the pull request.
 
 ## Future Enhancements
 
 We have some exciting plans for the future, including:
 
-*   **Android Application:** A native Android app for a seamless mobile experience.
-*   **AI-Powered Summarization:** Using AI to generate concise summaries of articles.
+*   **AI-Powered Summarization:** Using AI to generate concise summaries of articles (web scraping and cloud functions).
 *   **Semantic Similarity Search:** Finding articles that are semantically similar to the one you're reading.
+*   **Android Application:** A native Android app for a seamless mobile experience.
 *   **And much more!**
