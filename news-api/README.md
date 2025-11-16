@@ -28,9 +28,75 @@ go build -ldflags="-s -w" -o news-api-prod main.go
 
 This will create a `news-api-prod` executable in the current directory.
 
-## API Endpoints
+## API Documentation
 
-*   **`/news`**: Fetches and returns news articles. Supports `source`, `limit`, `start`, and `end` query parameters.
+This API provides endpoints to retrieve news articles and a daily threat assessment. All endpoints return responses in JSON format.
+
+### Get News Articles
+
+- **Endpoint:** `/news`
+- **Method:** `GET`
+- **Description:** Fetches a list of news articles. Articles can be filtered by source, category, a search query, and date range.
+
+#### Query Parameters
+
+| Parameter | Type    | Description                                                                                                  | Example                               |
+| :-------- | :------ | :----------------------------------------------------------------------------------------------------------- | :------------------------------------ |
+| `source`  | string  | Filter articles by a specific RSS feed URL.                                                                  | `?source=https://www.bleepingcomputer.com/feed/` |
+| `category`| string  | Filter articles by category. Supported values are `Cybersecurity`, `Tech`, and `Defense`.                      | `?category=Cybersecurity`             |
+| `search`  | string  | A search term to filter articles by title or description. The search is case-insensitive.                      | `?search=ransomware`                  |
+| `limit`   | integer | The maximum number of articles to return. Defaults to `20`.                                                    | `?limit=10`                           |
+| `start`   | string  | The start date for filtering articles, in `YYYY-MM-DD` format.                                               | `?start=2023-10-26`                   |
+| `end`     | string  | The end date for filtering articles, in `YYYY-MM-DD` format.                                                 | `?end=2023-10-27`                     |
+| `sortBy`  | string  | The sorting order for the articles. Supported values are `publishedAt` (default) and `rank`.                 | `?sortBy=rank`                        |
+
+#### Example Request (Using `curl`)
+
+```bash
+curl "http://localhost:8080/news?category=Cybersecurity&search=vulnerability&limit=5"
+```
+
+#### Example Response
+
+```json
+[
+    {
+        "id": 123,
+        "title": "Critical Vulnerability Found in Popular Web Server",
+        "description": "A critical vulnerability has been discovered...",
+        "imageUrl": "https://example.com/image.png",
+        "url": "https://example.com/article",
+        "sourceUrl": "https://feeds.feedburner.com/TheHackersNews",
+        "publishedAt": "2023-10-27T10:00:00Z",
+        "rank": 5,
+        "category": "Cybersecurity"
+    }
+]
+```
+
+### Get Today's Threat Score
+
+- **Endpoint:** `/today-threat`
+- **Method:** `GET`
+- **Description:** Provides a threat assessment based on the articles published in the last 24 hours. The threat level is categorized as `Code Red`, `Attention`, or `Business as Usual`.
+
+#### Example Request (Using `curl`)
+
+```bash
+curl "http://localhost:8080/today-threat"
+```
+
+#### Example Response
+
+```json
+{
+    "lowRankCount": 15,
+    "mediumRankCount": 5,
+    "highRankCount": 2,
+    "totalArticles": 22,
+    "threatLevel": "Code Red"
+}
+```
 
 ## Environment Variables
 
