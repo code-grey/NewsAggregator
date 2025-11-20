@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -13,8 +14,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/mmcdole/gofeed"
-	"news-api/models"
 	"github.com/pemistahl/lingua-go"
+	"news-api/models"
 )
 
 var db *sql.DB
@@ -97,7 +98,10 @@ func calculateRank(article models.NewsArticle) int {
 	}
 
 	for keyword, score := range keywords {
-		if strings.Contains(content, keyword) {
+		// Escape the keyword for regex safety, though these are hardcoded known safe strings.
+		// \b matches a word boundary.
+		matched, _ := regexp.MatchString(`\b`+regexp.QuoteMeta(keyword)+`\b`, content)
+		if matched {
 			rank += score
 		}
 	}
@@ -248,6 +252,30 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, searchFilter 
 		articles = append(articles, article)
 	}
 
+	return articles, nil
+}
+
+func GetAllArticles() ([]models.NewsArticle, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+	var articles []models.NewsArticle
+	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank, category FROM articles"
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var article models.NewsArticle
+		if err := rows.Scan(&article.Title, &article.Description, &article.ImageURL, &article.URL, &article.SourceURL, &article.PublishedAt, &article.Rank, &article.Category); err != nil {
+			log.Printf("Error scanning article: %v", err)
+			continue
+		}
+		articles = append(articles, article)
+	}
 	return articles, nil
 }
 
