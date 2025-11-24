@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"news-api/db"
+	"news-api/models"
 )
 
 func GetNews(w http.ResponseWriter, r *http.Request) {
@@ -65,4 +68,37 @@ func GetTodayThreat(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(threatScore)
+}
+
+func DownloadCSV(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"news_data.csv\"")
+
+	writer := csv.NewWriter(w)
+	defer writer.Flush()
+
+	// Write CSV Header
+	header := []string{"Title", "Description", "URL", "Source", "Category", "Published At", "Rank"}
+	if err := writer.Write(header); err != nil {
+		log.Printf("Error writing CSV header: %v", err)
+		return
+	}
+
+	err := db.ExportArticles(func(article models.NewsArticle) error {
+		row := []string{
+			article.Title,
+			article.Description,
+			article.URL,
+			article.SourceURL,
+			article.Category,
+			article.PublishedAt.Format(time.RFC3339),
+			fmt.Sprintf("%d", article.Rank),
+		}
+		return writer.Write(row)
+	})
+
+	if err != nil {
+		log.Printf("Error exporting articles to CSV: %v", err)
+		// Note: We can't really change the status code here if we've already started writing the response
+	}
 }

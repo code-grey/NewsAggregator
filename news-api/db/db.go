@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,10 +17,13 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/mmcdole/gofeed"
 	"github.com/pemistahl/lingua-go"
+	"news-api/models"
 )
 
 var db *sql.DB
 var detector lingua.LanguageDetector
+var compiledPatterns map[string]*regexp.Regexp
+var patternsMutex sync.RWMutex
 
 func InitDB() error {
 	var err error
@@ -62,6 +66,8 @@ func InitDB() error {
 		WithPreloadedLanguageModels().
 		Build()
 
+	compiledPatterns = make(map[string]*regexp.Regexp)
+
 	log.Println("Database initialized successfully.")
 	return nil
 }
@@ -98,7 +104,25 @@ func calculateRank(article models.NewsArticle) int {
 	}
 
 	for keyword, score := range keywords {
-		if strings.Contains(content, keyword) {
+		patternsMutex.RLock()
+		pattern, exists := compiledPatterns[keyword]
+		patternsMutex.RUnlock()
+
+		if !exists {
+			// Compile and cache the regex pattern
+			// \b matches a word boundary.
+			var err error
+			pattern, err = regexp.Compile(`\b` + regexp.QuoteMeta(keyword) + `\b`)
+			if err != nil {
+				log.Printf("Error compiling regex for keyword %s: %v", keyword, err)
+				continue
+			}
+			patternsMutex.Lock()
+			compiledPatterns[keyword] = pattern
+			patternsMutex.Unlock()
+		}
+
+		if pattern.MatchString(content) {
 			rank += score
 		}
 	}
@@ -248,6 +272,33 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, searchFilter 
 	}
 
 	return articles, nil
+}
+
+// ExportArticles streams all articles from the database to the provided callback function.
+// This allows processing large datasets without loading everything into memory.
+func ExportArticles(writeFunc func(models.NewsArticle) error) error {
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank, category FROM articles"
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var article models.NewsArticle
+		if err := rows.Scan(&article.Title, &article.Description, &article.ImageURL, &article.URL, &article.SourceURL, &article.PublishedAt, &article.Rank, &article.Category); err != nil {
+			log.Printf("Error scanning article: %v", err)
+			continue
+		}
+		if err := writeFunc(article); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func StartCachingJob(rssSources []string) {

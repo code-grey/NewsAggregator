@@ -288,7 +288,7 @@
         <label for="category-select">Category:</label>
         <select id="category-select">
             <option value="all">All Categories</option>
-            <option value="Cybersecurity">Cybersecurity</option>
+            <option value="Cybersecurity" selected>Cybersecurity</option>
             <option value="Tech">Tech</option>
             <option value="Defense">Defense</option>
             <option value="General">General</option>
@@ -325,8 +325,10 @@
         <label for="sort-by">Sort by:</label>
         <select id="sort-by">
             <option value="publishedAt">Date</option>
-            <option value="rank">Rank</option>
+            <option value="rank" selected>Rank</option>
         </select>
+
+        <button id="download-csv">Download CSV</button>
     </div>
 
     <div id="threat-score-section">
@@ -513,6 +515,10 @@
             dateStartInput.addEventListener('change', handleDateChange);
             dateEndInput.addEventListener('change', handleDateChange);
             sortBySelect.addEventListener('change', debouncedFetchAll);
+
+            document.getElementById('download-csv').addEventListener('click', () => {
+                window.location.href = '/download-csv';
+            });
 
             const fetchThreatScore = () => {
                 fetch('/today-threat')
