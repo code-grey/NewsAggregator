@@ -20,6 +20,8 @@ import (
 
 var db *sql.DB
 var detector lingua.LanguageDetector
+var compiledPatterns map[string]*regexp.Regexp
+var patternsMutex sync.RWMutex
 
 func InitDB() error {
 	var err error
@@ -62,6 +64,8 @@ func InitDB() error {
 		WithPreloadedLanguageModels().
 		Build()
 
+	compiledPatterns = make(map[string]*regexp.Regexp)
+
 	log.Println("Database initialized successfully.")
 	return nil
 }
@@ -98,10 +102,25 @@ func calculateRank(article models.NewsArticle) int {
 	}
 
 	for keyword, score := range keywords {
-		// Escape the keyword for regex safety, though these are hardcoded known safe strings.
-		// \b matches a word boundary.
-		matched, _ := regexp.MatchString(`\b`+regexp.QuoteMeta(keyword)+`\b`, content)
-		if matched {
+		patternsMutex.RLock()
+		pattern, exists := compiledPatterns[keyword]
+		patternsMutex.RUnlock()
+
+		if !exists {
+			// Compile and cache the regex pattern
+			// \b matches a word boundary.
+			var err error
+			pattern, err = regexp.Compile(`\b` + regexp.QuoteMeta(keyword) + `\b`)
+			if err != nil {
+				log.Printf("Error compiling regex for keyword %s: %v", keyword, err)
+				continue
+			}
+			patternsMutex.Lock()
+			compiledPatterns[keyword] = pattern
+			patternsMutex.Unlock()
+		}
+
+		if pattern.MatchString(content) {
 			rank += score
 		}
 	}
@@ -255,16 +274,17 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, searchFilter 
 	return articles, nil
 }
 
-func GetAllArticles() ([]models.NewsArticle, error) {
+// ExportArticles streams all articles from the database to the provided callback function.
+// This allows processing large datasets without loading everything into memory.
+func ExportArticles(writeFunc func(models.NewsArticle) error) error {
 	if db == nil {
-		return nil, fmt.Errorf("database connection is nil")
+		return fmt.Errorf("database connection is nil")
 	}
-	var articles []models.NewsArticle
 	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank, category FROM articles"
 
 	rows, err := db.Query(query)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 
@@ -274,9 +294,11 @@ func GetAllArticles() ([]models.NewsArticle, error) {
 			log.Printf("Error scanning article: %v", err)
 			continue
 		}
-		articles = append(articles, article)
+		if err := writeFunc(article); err != nil {
+			return err
+		}
 	}
-	return articles, nil
+	return nil
 }
 
 func StartCachingJob(rssSources []string) {

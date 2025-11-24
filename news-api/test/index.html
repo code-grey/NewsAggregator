@@ -278,7 +278,7 @@
             <option value="rank" selected>Rank</option>
         </select>
 
-        <button id="download-csv" onclick="window.location.href='/download-csv'">Download CSV</button>
+        <button id="download-csv">Download CSV</button>
     </div>
 
     <div id="threat-score-section">
@@ -465,6 +465,10 @@
             dateStartInput.addEventListener('change', handleDateChange);
             dateEndInput.addEventListener('change', handleDateChange);
             sortBySelect.addEventListener('change', debouncedFetchAll);
+
+            document.getElementById('download-csv').addEventListener('click', () => {
+                window.location.href = '/download-csv';
+            });
 
             const fetchThreatScore = () => {
                 fetch('/today-threat')

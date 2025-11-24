@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"news-api/db"
+	"news-api/models"
 )
 
 func GetNews(w http.ResponseWriter, r *http.Request) {
@@ -70,13 +71,6 @@ func GetTodayThreat(w http.ResponseWriter, r *http.Request) {
 }
 
 func DownloadCSV(w http.ResponseWriter, r *http.Request) {
-	articles, err := db.GetAllArticles()
-	if err != nil {
-		log.Printf("Error fetching articles for CSV: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"news_data.csv\"")
 
@@ -90,8 +84,7 @@ func DownloadCSV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Write data rows
-	for _, article := range articles {
+	err := db.ExportArticles(func(article models.NewsArticle) error {
 		row := []string{
 			article.Title,
 			article.Description,
@@ -101,9 +94,11 @@ func DownloadCSV(w http.ResponseWriter, r *http.Request) {
 			article.PublishedAt.Format(time.RFC3339),
 			fmt.Sprintf("%d", article.Rank),
 		}
-		if err := writer.Write(row); err != nil {
-			log.Printf("Error writing CSV row: %v", err)
-			return
-		}
+		return writer.Write(row)
+	})
+
+	if err != nil {
+		log.Printf("Error exporting articles to CSV: %v", err)
+		// Note: We can't really change the status code here if we've already started writing the response
 	}
 }
