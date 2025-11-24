@@ -10,10 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"news-api/models"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/mmcdole/gofeed"
-	"news-api/models"
 	"github.com/pemistahl/lingua-go"
 )
 
@@ -128,8 +129,6 @@ type ThreatScore struct {
 	TotalArticles   int    `json:"totalArticles"`
 	ThreatLevel     string `json:"threatLevel"`
 }
-
-
 
 // GetTodayThreatScore calculates the threat score based on articles published in the last 24 hours.
 func GetTodayThreatScore() (ThreatScore, error) {
@@ -285,6 +284,14 @@ func fetchAndCacheNews(rssSources []string) {
 	var wg sync.WaitGroup
 	p := bluemonday.StripTagsPolicy()
 
+	articleChan := make(chan models.NewsArticle, 100)
+
+	go func() {
+		for article := range articleChan {
+			InsertArticle(article) // This runs strictly one at a time
+		}
+	}()
+
 	for _, source := range rssSources {
 		wg.Add(1)
 		go func(source string) {
@@ -326,14 +333,14 @@ func fetchAndCacheNews(rssSources []string) {
 					article.PublishedAt = time.Now()
 				}
 
-				if err := InsertArticle(article); err != nil {
-					// log.Printf("Error inserting article %s: %v", article.Title, err) // Log only if not a unique constraint violation
-				}
+				// Send to the channel instead of writing to DB
+				articleChan <- article
 			}
 		}(source)
 	}
 
 	wg.Wait()
+	close(articleChan)
 	log.Println("News caching job completed.")
 }
 
@@ -358,7 +365,7 @@ func getCategoryForSource(sourceURL string) string {
 		"https://www.csoonline.com/feed/",
 	}
 
-		techSources := []string{
+	techSources := []string{
 		"https://www.theverge.com/rss/index.xml",
 		"https://techcrunch.com/feed/",
 		"https://arstechnica.com/feed/",
