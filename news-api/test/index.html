@@ -278,7 +278,7 @@
             <option value="rank" selected>Rank</option>
         </select>
 
-        <button id="download-csv" onclick="window.location.href='/download-csv'">Download CSV</button>
+        <button id="download-csv">Download CSV</button>
     </div>
 
     <div id="threat-score-section">
@@ -340,6 +340,12 @@
             const searchInput = document.getElementById('search-input');
             const applyFiltersButton = document.getElementById('apply-filters');
             const newsContainer = document.getElementById('news');
+            const downloadCsvButton = document.getElementById('download-csv');
+
+            // Add event listener for CSV download button
+            downloadCsvButton.addEventListener('click', () => {
+                window.location.href = '/download-csv';
+            });
 
             // Populate source dropdown
             rssSources.forEach(sourceUrl => {
