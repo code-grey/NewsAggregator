@@ -327,6 +327,8 @@
             <option value="publishedAt">Date</option>
             <option value="rank">Rank</option>
         </select>
+
+        <button id="download-csv-btn" title="Download all articles as CSV" style="margin-left: auto;">Download CSV</button>
     </div>
 
     <div id="threat-score-section">
@@ -386,8 +388,12 @@
             const dateEndInput = document.getElementById('date-end');
             const sortBySelect = document.getElementById('sort-by');
             const searchInput = document.getElementById('search-input');
-            const applyFiltersButton = document.getElementById('apply-filters');
             const newsContainer = document.getElementById('news');
+            const downloadBtn = document.getElementById('download-csv-btn');
+
+            downloadBtn.addEventListener('click', () => {
+                window.location.href = '/export/csv';
+            });
 
             // Populate source dropdown
             rssSources.forEach(sourceUrl => {

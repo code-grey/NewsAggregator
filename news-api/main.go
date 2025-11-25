@@ -64,6 +64,7 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.HandleFunc("/news", handlers.GetNews)
 	mux.HandleFunc("/today-threat", handlers.GetTodayThreat)
+	mux.HandleFunc("/export/csv", handlers.ExportCSV)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))

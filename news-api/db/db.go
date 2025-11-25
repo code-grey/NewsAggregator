@@ -416,3 +416,17 @@ func ClearAllArticlesForTest() error {
 	_, err := db.Exec("DELETE FROM articles")
 	return err
 }
+
+// GetAllArticlesStream returns a sql.Rows object for streaming all articles.
+// The caller is responsible for closing the rows.
+func GetAllArticlesStream() (*sql.Rows, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+	query := "SELECT title, description, imageUrl, url, sourceUrl, publishedAt, rank, category FROM articles ORDER BY publishedAt DESC"
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}

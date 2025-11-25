@@ -197,3 +197,26 @@ func TestGetTodayThreat(t *testing.T) {
 	assert.Equal(t, 3, threatScore.TotalArticles)
 	assert.Equal(t, "Code Red", threatScore.ThreatLevel)
 }
+
+func TestExportCSV(t *testing.T) {
+	setupTestDB(t)
+	seedArticles(t)
+
+	req, err := http.NewRequest("GET", "/export/csv", nil)
+	require.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(ExportCSV)
+	handler.ServeHTTP(rr, req)
+
+	// Check status and headers
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "text/csv", rr.Header().Get("Content-Type"))
+	assert.Equal(t, `attachment; filename="articles.csv"`, rr.Header().Get("Content-Disposition"))
+
+	// Check CSV content
+	body := rr.Body.String()
+	assert.Contains(t, body, "Title,Description,ImageURL,URL,SourceURL,PublishedAt,Rank,Category\n", "CSV header is missing or incorrect")
+	assert.Contains(t, body, "Cyber Article 1,", "CSV should contain data from seeded articles")
+	assert.Contains(t, body, "Tech Article 1,", "CSV should contain data from seeded articles")
+}
