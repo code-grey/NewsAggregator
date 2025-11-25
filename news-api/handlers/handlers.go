@@ -41,6 +41,8 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid end date format", http.StatusBadRequest)
 			return
 		}
+		// Add 23 hours, 59 minutes, and 59 seconds to the end date to include the entire day.
+		endDate = endDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 	}
 
 	articles, err := db.GetArticlesFromDB(sourceFilter, categoryFilter, searchFilter, limit, startDate, endDate, sortBy) // Pass categoryFilter

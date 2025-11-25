@@ -49,7 +49,7 @@ var RssSources = []string{
 var limiter = rate.NewLimiter(2, 10)
 
 func main() {
-	if err := db.InitDB(); err != nil {
+	if err := db.InitDB("./news.db"); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	// Start the background caching job

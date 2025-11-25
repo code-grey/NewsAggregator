@@ -21,9 +21,9 @@ import (
 var db *sql.DB
 var detector lingua.LanguageDetector
 
-func InitDB() error {
+func InitDB(dataSourceName string) error {
 	var err error
-	db, err = sql.Open("sqlite3", "./news.db")
+	db, err = sql.Open("sqlite3", dataSourceName)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %v", err)
 	}
@@ -251,10 +251,6 @@ func GetArticlesFromDB(sourceFilter string, categoryFilter string, searchFilter 
 }
 
 func StartCachingJob(rssSources []string) {
-	if err := InitDB(); err != nil {
-		log.Printf("Failed to initialize database for caching job: %v", err)
-		return
-	}
 	fetchAndCacheNews(rssSources)
 
 	ticker := time.NewTicker(15 * time.Minute)
@@ -410,4 +406,13 @@ func getCategoryForSource(sourceURL string) string {
 	}
 
 	return "General" // Default category if no match
+}
+
+// ClearAllArticlesForTest clears all articles from the database. This is intended for use in tests.
+func ClearAllArticlesForTest() error {
+	if db == nil {
+		return nil
+	}
+	_, err := db.Exec("DELETE FROM articles")
+	return err
 }
